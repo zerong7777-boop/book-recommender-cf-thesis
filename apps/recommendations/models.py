@@ -12,6 +12,9 @@ class OfflineJobRun(models.Model):
     processed_user_count = models.PositiveIntegerField(default=0)
     summary = models.TextField(blank=True)
 
+    def __str__(self) -> str:
+        return f"{self.job_name} ({self.status})"
+
 
 class RecommendationResult(models.Model):
     STRATEGY_CHOICES = [("hot", "Hot"), ("itemcf", "ItemCF"), ("usercf", "UserCF"), ("hybrid", "Hybrid")]
@@ -20,6 +23,10 @@ class RecommendationResult(models.Model):
     strategy = models.CharField(max_length=20, choices=STRATEGY_CHOICES)
     generated_at = models.DateTimeField()
     top_k = models.PositiveIntegerField(default=20)
+
+    def __str__(self) -> str:
+        owner = self.user_id if self.user_id is not None else "global"
+        return f"{self.strategy}:{owner}:{self.generated_at.isoformat()}"
 
 
 class RecommendationItem(models.Model):
@@ -31,6 +38,13 @@ class RecommendationItem(models.Model):
 
     class Meta:
         ordering = ["rank"]
+        constraints = [
+            models.UniqueConstraint(fields=["result", "rank"], name="unique_recommendation_result_rank"),
+            models.UniqueConstraint(fields=["result", "book"], name="unique_recommendation_result_book"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.result_id}:{self.rank}:{self.book_id}"
 
 
 class SimilarBookResult(models.Model):
@@ -41,3 +55,10 @@ class SimilarBookResult(models.Model):
 
     class Meta:
         ordering = ["rank"]
+        constraints = [
+            models.UniqueConstraint(fields=["source_book", "rank"], name="unique_similar_book_source_rank"),
+            models.UniqueConstraint(fields=["source_book", "target_book"], name="unique_similar_book_source_target"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.source_book_id}->{self.target_book_id} ({self.rank})"

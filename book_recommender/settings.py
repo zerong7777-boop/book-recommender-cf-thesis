@@ -5,10 +5,16 @@ from dotenv import load_dotenv
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / ".env")
+env_path = BASE_DIR / ".env"
+load_dotenv(env_path)
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only")
-DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
+DEBUG = os.getenv("DJANGO_DEBUG", "True" if not env_path.exists() else "False").lower() == "true"
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = "dev-only"
+    else:
+        raise RuntimeError("DJANGO_SECRET_KEY must be set when DEBUG is false")
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
@@ -37,6 +43,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 ROOT_URLCONF = "book_recommender.urls"
@@ -84,4 +91,3 @@ LOGOUT_REDIRECT_URL = "/"
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "book_recommender" / "static"]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-

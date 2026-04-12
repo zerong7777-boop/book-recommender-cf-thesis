@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Profile | Book Recommender{% endblock %}
+
+{% block content %}
+  <h1>{{ request.user.username }}</h1>
+  <p>Recommendation state: {{ recommendation_state }}</p>
+
+  <h2>Your ratings</h2>
+  {% if ratings %}
+    <ul class="list-group">
+      {% for rating in ratings %}
+        <li class="list-group-item d-flex justify-content-between">
+          <span>{{ rating.book.title }}</span>
+          <span>{{ rating.score }}/5</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>You have not rated any books yet.</p>
+  {% endif %}
+{% endblock %}

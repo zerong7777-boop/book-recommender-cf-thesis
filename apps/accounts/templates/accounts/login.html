@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Log in | Book Recommender{% endblock %}
+
+{% block content %}
+  <h1>Log in</h1>
+  <form method="post" class="card card-body">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Log in</button>
+  </form>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Register | Book Recommender{% endblock %}
+
+{% block content %}
+  <h1>Create account</h1>
+  <form method="post" class="card card-body">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Register</button>
+  </form>
+{% endblock %}

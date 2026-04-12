@@ -11,4 +11,4 @@ dist/
 build/
 htmlcov/
 *.egg-info/
-
+.worktrees/

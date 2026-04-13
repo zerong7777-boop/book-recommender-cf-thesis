@@ -81,6 +81,22 @@ Rebuild collaborative-filtering and hot-start recommendation data:
 conda run -n bookrec311 python manage.py rebuild_recommendations
 ```
 
+## Redis-backed read verification
+
+The formal spec path uses `book_recommender.settings`, which reads Redis from `REDIS_URL`. Start Redis, then run:
+
+```powershell
+conda run -n bookrec311 python scripts/verify_redis_cache_path.py
+```
+
+Expected output:
+
+```text
+redis_cache_path_ok hot_result_id=1 processed_users=1
+```
+
+The `book_recommender.settings_mysql_demo` setting uses locmem cache only for local click-through demos and does not prove the Redis-backed read path.
+
 ## Evaluation
 
 Generate the thesis evaluation artifact summary:

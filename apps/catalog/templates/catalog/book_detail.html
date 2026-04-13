@@ -19,8 +19,11 @@
     <h2 class="h4">相似图书</h2>
     {% if similar_books %}
       <div class="row g-3">
-        {% for book in similar_books %}
-          <div class="col-md-4">{% include "catalog/_book_card.html" with book=book %}</div>
+        {% for item in similar_books %}
+          <div class="col-md-4">
+            {% include "catalog/_book_card.html" with book=item.target_book %}
+            <p class="small text-muted mt-2 mb-0">Similarity score: {{ item.score|floatformat:2 }}</p>
+          </div>
         {% endfor %}
       </div>
     {% else %}

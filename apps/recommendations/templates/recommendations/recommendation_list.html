@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}My Recommendations | Book Recommender{% endblock %}
+
+{% block content %}
+  <section class="mb-4">
+    <h1 class="mb-2">Recommendation Results</h1>
+    <p class="text-muted mb-1">Current state: {{ recommendation_block.state }}</p>
+    {% if recommendation_block.payload %}
+      <p class="text-muted">Updated at: {{ recommendation_block.payload.generated_at }}</p>
+    {% endif %}
+  </section>
+
+  {% if recommendation_block.payload_items %}
+    <div class="row g-3">
+      {% for item in recommendation_block.payload_items %}
+        <div class="col-md-4">
+          <article class="card h-100">
+            {% if item.cover_url %}
+              <img src="{{ item.cover_url }}" class="card-img-top" alt="{{ item.title }}">
+            {% endif %}
+            <div class="card-body">
+              <h2 class="h5 card-title">
+                <a href="{% url 'catalog:book_detail' item.book_id %}">{{ item.title }}</a>
+              </h2>
+              <p class="card-text text-muted mb-2">{{ item.author }}</p>
+              <p class="card-text small mb-2">
+                <a href="{% url 'catalog:category_list' item.category_slug %}">{{ item.category }}</a>
+              </p>
+              <p class="card-text small mb-2">Average rating: {{ item.average_rating }}</p>
+              <p class="card-text small text-muted mb-0">{{ item.reason }}</p>
+            </div>
+          </article>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted">Recommendations are not ready yet. Rate more books or wait for the next offline rebuild.</p>
+  {% endif %}
+{% endblock %}

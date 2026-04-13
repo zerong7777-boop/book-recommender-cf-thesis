@@ -23,7 +23,11 @@ def book_list_view(request):
 
 def category_list_view(request, slug):
     category = get_object_or_404(Category, slug=slug)
-    return render(request, "catalog/category_list.html", {"category": category, "books": category.books.all()})
+    return render(
+        request,
+        "catalog/category_list.html",
+        {"category": category, "books": category.books.select_related("category")},
+    )
 
 
 def book_detail_view(request, pk):

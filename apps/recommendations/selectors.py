@@ -19,5 +19,5 @@ def homepage_recommendation_block(user):
 def similar_books_for_detail(book, user):
     return [
         result.target_book
-        for result in SimilarBookResult.objects.filter(source_book=book).select_related("target_book")
+        for result in SimilarBookResult.objects.filter(source_book=book).select_related("target_book__category")
     ]

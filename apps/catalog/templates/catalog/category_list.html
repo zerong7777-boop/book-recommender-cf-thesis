@@ -1,16 +1,25 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
-{% block title %}{{ category.name }} - Book Recommender{% endblock %}
+{% block title %}{{ category.name }} | Book Recommender{% endblock %}
 
 {% block content %}
-  <h1 class="mb-3">{{ category.name }}</h1>
-  {% if books %}
-    <div class="row g-3">
-      {% for book in books %}
-        <div class="col-md-4">{% include "catalog/_book_card.html" with book=book %}</div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <p class="text-muted">该分类暂无图书。</p>
-  {% endif %}
+  <section class="content-panel mb-4">
+    <p class="section-kicker">Category shelf</p>
+    <h1 class="page-title">{{ category.name }}</h1>
+    <p class="section-description">Books grouped under the same category for quick browsing and comparison.</p>
+  </section>
+
+  <section class="content-panel">
+    {% if books %}
+      <div class="row g-4">
+        {% for book in books %}
+          <div class="col-sm-6 col-xl-3">
+            {% include "catalog/_book_card.html" with book=book %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty-state mb-0">This category does not contain books yet.</p>
+    {% endif %}
+  </section>
 {% endblock %}

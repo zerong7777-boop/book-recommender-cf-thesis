@@ -1,31 +1,76 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Profile | Book Recommender{% endblock %}
 
 {% block content %}
-  <h1>{{ request.user.username }}</h1>
-  <p>Recommendation state: {{ recommendation_state }}</p>
-
-  <h2>Your ratings</h2>
-  <p>
-    <a class="btn btn-primary" href="{% url 'ratings:first-rate' %}">Rate your first book</a>
-  </p>
-  {% if ratings %}
-    <ul class="list-group">
-      {% for rating in ratings %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span>{{ rating.book.title }}</span>
-          <span class="d-flex align-items-center gap-3">
-            <span>{{ rating.score }}/5</span>
-            <form action="{% url 'ratings:delete-rating' rating.book.pk %}" method="post" class="m-0">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-            </form>
-          </span>
-        </li>
-      {% endfor %}
+  <section class="content-panel mb-4">
+    <div class="section-header-row">
+      <div>
+        <p class="section-kicker">Personal center</p>
+        <h1 class="page-title mb-1">{{ request.user.username }}</h1>
+        <p class="section-description mb-0">Track your rating history and jump directly into recommendation flows.</p>
+      </div>
+      <div class="panel-actions">
+        <a class="btn btn-dark" href="{% url 'ratings:first-rate' %}">Rate your first book</a>
+        <a class="btn btn-outline-dark" href="{% url 'recommendations:list' %}">Recommendation center</a>
+      </div>
+    </div>
+    <ul class="status-list">
+      <li class="status-pill">Recommendation state: {{ recommendation_state }}</li>
+      <li class="status-pill"><a href="{% url 'accounts:password_change' %}">Password change</a></li>
     </ul>
-  {% else %}
-    <p>You have not rated any books yet.</p>
+  </section>
+
+  {% if recommendation_preview.items %}
+    <section class="content-panel mb-4">
+      <div class="section-header-row">
+        <div>
+          <p class="section-kicker">Why these picks</p>
+          <h2 class="section-title h1 mb-0">Recommended because</h2>
+        </div>
+      </div>
+      <div class="row g-3">
+        {% for item in recommendation_preview.items %}
+          <div class="col-lg-4">
+            <article class="path-card h-100">
+              <p class="small-label mb-2">Rank #{{ item.rank }}</p>
+              <h3 class="h4 mb-2">{{ item.title }}</h3>
+              <p class="small-label mb-2">{{ item.author }}</p>
+              <p class="mb-3">{{ item.reason }}</p>
+              <a class="btn btn-outline-dark btn-sm" href="{% url 'catalog:book_detail' item.book_id %}">Open detail</a>
+            </article>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
   {% endif %}
+
+  <section class="content-panel">
+    <div class="section-header-row">
+      <div>
+        <p class="section-kicker">Ratings</p>
+        <h2 class="section-title h1 mb-0">Your ratings</h2>
+      </div>
+    </div>
+    {% if ratings %}
+      <div class="row g-3">
+        {% for rating in ratings %}
+          <div class="col-12">
+            <article class="mini-card p-3 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+              <div>
+                <h3 class="h5 mb-1">{{ rating.book.title }}</h3>
+                <p class="small-label mb-0">{{ rating.score }}/5</p>
+              </div>
+              <form action="{% url 'ratings:delete-rating' rating.book.pk %}" method="post" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </article>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty-state mb-0">You have not rated any books yet.</p>
+    {% endif %}
+  </section>
 {% endblock %}

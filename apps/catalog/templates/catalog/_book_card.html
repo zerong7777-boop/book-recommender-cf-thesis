@@ -1,18 +1,24 @@
-<article class="card h-100">
+﻿<article class="book-card">
   {% if book.cover_url %}
-    <img src="{{ book.cover_url }}" class="card-img-top" alt="{{ book.title }}">
+    <div class="book-card-image">
+      <img src="{{ book.cover_url }}" alt="{{ book.title }}">
+    </div>
+  {% else %}
+    <div class="book-card-placeholder">
+      <span>{{ book.title|first|upper }}</span>
+    </div>
   {% endif %}
-  <div class="card-body">
-    <h2 class="h5 card-title">
+  <div class="book-card-body">
+    <h2 class="book-card-title">
       {% if book.pk %}
-        <a href="{% url 'catalog:book_detail' book.pk %}">{{ book.title }}</a>
+        <a class="book-card-link" href="{% url 'catalog:book_detail' book.pk %}">{{ book.title }}</a>
       {% else %}
         {{ book.title }}
       {% endif %}
     </h2>
-    <p class="card-text text-muted mb-2">{{ book.author }}</p>
+    <p class="book-card-author mb-2">{{ book.author }}</p>
     {% if book.category %}
-      <p class="card-text small">
+      <p class="book-card-meta mb-0">
         <a href="{% url 'catalog:category_list' book.category.slug %}">{{ book.category.name }}</a>
       </p>
     {% endif %}

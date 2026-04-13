@@ -61,6 +61,32 @@ def test_staff_dashboard_shows_latest_job(client):
 
 
 @pytest.mark.django_db
+def test_staff_dashboard_shows_ops_summary_cards(client):
+    staff = get_user_model().objects.create_user(
+        username="ops",
+        email="ops@example.com",
+        password="AdminPass123",
+        is_staff=True,
+    )
+    OfflineJobRun.objects.create(
+        job_name="rebuild_recommendations",
+        status="success",
+        started_at=timezone.now(),
+        finished_at=timezone.now(),
+        processed_user_count=8,
+        summary="processed 8 users",
+    )
+
+    client.login(username="ops", password="AdminPass123")
+    response = client.get(reverse("dashboard:home"))
+
+    content = response.content.decode()
+    assert "Operations overview" in content
+    assert "Trigger rebuild" in content
+    assert "Recent recommendation results" in content
+
+
+@pytest.mark.django_db
 def test_staff_dashboard_clears_stale_lock_from_home(client, monkeypatch, settings, tmp_path):
     staff = get_user_model().objects.create_user(
         username="cleanup",

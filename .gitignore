@@ -14,3 +14,4 @@ htmlcov/
 .worktrees/
 .runtime/
 artifacts/evaluations/summary.json
+local-demo.sqlite3

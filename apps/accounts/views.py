@@ -6,7 +6,7 @@ from django.urls import reverse_lazy
 
 from apps.accounts.forms import LoginForm, RegistrationForm
 from apps.ratings.models import UserRating
-from apps.recommendations.selectors import recommendation_state_for_user
+from apps.recommendations.selectors import recommendation_preview_for_user, recommendation_state_for_user
 
 
 def register_view(request):
@@ -34,12 +34,14 @@ class UserLogoutView(LogoutView):
 def profile_view(request):
     ratings = UserRating.objects.filter(user=request.user).select_related("book").order_by("-rated_at")
     recommendation_state = recommendation_state_for_user(request.user)
+    recommendation_preview = recommendation_preview_for_user(request.user)
     return render(
         request,
         "accounts/profile.html",
         {
             "ratings": ratings,
             "recommendation_state": recommendation_state,
+            "recommendation_preview": recommendation_preview,
         },
     )
 

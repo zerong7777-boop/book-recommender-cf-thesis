@@ -135,4 +135,33 @@ def test_first_rate_page_lists_popular_books_for_new_user(client):
     response = client.get(reverse("ratings:first-rate"))
 
     assert response.status_code == 200
-    assert "Popular Novel" in response.content.decode()
+    content = response.content.decode()
+    assert "Popular Novel" in content
+    assert "Quick-start rating" in content
+    assert "Popular books to rate first" in content
+
+
+@pytest.mark.django_db
+def test_rate_book_page_shows_score_guidance(client):
+    get_user_model().objects.create_user(
+        username="guide-reader",
+        email="guide-reader@example.com",
+        password="ReaderPass123",
+    )
+    category = Category.objects.create(name="Drama", slug="drama")
+    book = Book.objects.create(
+        title="Stage Light",
+        author="Writer",
+        category=category,
+        description="d",
+        publisher="p",
+        publication_year=2022,
+    )
+
+    client.login(username="guide-reader", password="ReaderPass123")
+    response = client.get(reverse("ratings:rate-book", args=[book.pk]))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Choose a score from 1 to 5" in content
+    assert "Stage Light" in content

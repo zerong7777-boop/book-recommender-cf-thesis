@@ -3,41 +3,46 @@
 {% block title %}Start rating | Book Recommender{% endblock %}
 
 {% block content %}
-  <h1>Start rating books</h1>
-  <p>Your ratings help personalize recommendations.</p>
-  <p>
-    <a class="btn btn-primary" href="{% url 'catalog:book_list' %}">Browse books</a>
-    <a class="btn btn-outline-secondary" href="{% url 'accounts:profile' %}">Go to profile</a>
-  </p>
+  <section class="state-banner mb-4">
+    <p class="section-kicker">Cold-start flow</p>
+    <h1 class="page-title">Quick-start rating</h1>
+    <p class="section-description mb-3">Your first few ratings turn the system from generic discovery into user-specific recommendations.</p>
+    <div class="panel-actions">
+      <a class="btn btn-dark" href="{% url 'catalog:book_list' %}">Browse books</a>
+      <a class="btn btn-outline-dark" href="{% url 'accounts:profile' %}">Go to profile</a>
+    </div>
+  </section>
 
-  <section class="mt-4">
-    <h2 class="h4">Popular books to rate first</h2>
+  <section class="content-panel">
+    <div class="section-header-row">
+      <div>
+        <p class="section-kicker">Suggested titles</p>
+        <h2 class="section-title h1 mb-0">Popular books to rate first</h2>
+      </div>
+    </div>
     {% if books %}
-      <div class="row g-3">
+      <div class="row g-4">
         {% for book in books %}
-          <div class="col-md-4">
-            <article class="card h-100">
-              <div class="card-body">
-                <h3 class="h5 card-title">
-                  <a href="{% url 'catalog:book_detail' book.pk %}">{{ book.title }}</a>
-                </h3>
-                <p class="card-text text-muted">{{ book.author }}</p>
-                <p class="card-text small">Rating {{ book.average_rating }} / 5 from {{ book.rating_count }} readers</p>
-                <form method="post" action="{% url 'ratings:rate-book' book.pk %}" class="d-flex gap-2 align-items-end">
-                  {% csrf_token %}
-                  <div>
-                    <label class="form-label small" for="score-{{ book.pk }}">Your score</label>
-                    <input id="score-{{ book.pk }}" class="form-control form-control-sm" type="number" name="score" min="1" max="5" value="5">
-                  </div>
-                  <button class="btn btn-sm btn-primary" type="submit">Save</button>
-                </form>
-              </div>
+          <div class="col-md-6 col-xl-4">
+            <article class="path-card h-100">
+              <p class="small-label mb-2">Quick score form</p>
+              <h3 class="h4 mb-2"><a href="{% url 'catalog:book_detail' book.pk %}">{{ book.title }}</a></h3>
+              <p class="small-label mb-2">{{ book.author }}</p>
+              <p class="small-label mb-4">Rating {{ book.average_rating }} / 5 from {{ book.rating_count }} readers</p>
+              <form method="post" action="{% url 'ratings:rate-book' book.pk %}" class="rating-inline-form">
+                {% csrf_token %}
+                <div>
+                  <label class="form-label small" for="score-{{ book.pk }}">Your score</label>
+                  <input id="score-{{ book.pk }}" class="form-control" type="number" name="score" min="1" max="5" value="5">
+                </div>
+                <button class="btn btn-dark" type="submit">Save</button>
+              </form>
             </article>
           </div>
         {% endfor %}
       </div>
     {% else %}
-      <p class="text-muted">No books are available for first ratings yet.</p>
+      <p class="empty-state mb-0">No books are available for first ratings yet.</p>
     {% endif %}
   </section>
 {% endblock %}

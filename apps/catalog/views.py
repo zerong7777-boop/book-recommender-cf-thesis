@@ -1,6 +1,10 @@
 from django.shortcuts import get_object_or_404, render
 
-from apps.recommendations.selectors import homepage_recommendation_block, similar_books_for_detail
+from apps.recommendations.selectors import (
+    homepage_recommendation_block,
+    recommendation_explanation_for_book,
+    similar_books_for_detail,
+)
 
 from .models import Book, Category
 from .services import homepage_categories, search_books
@@ -35,5 +39,9 @@ def book_detail_view(request, pk):
     return render(
         request,
         "catalog/book_detail.html",
-        {"book": book, "similar_books": similar_books_for_detail(book, request.user)},
+        {
+            "book": book,
+            "similar_books": similar_books_for_detail(book, request.user),
+            "recommendation_explanation": recommendation_explanation_for_book(request.user, book),
+        },
     )

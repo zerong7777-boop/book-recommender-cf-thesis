@@ -1,30 +1,37 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
-{% block title %}图书列表 - Book Recommender{% endblock %}
+{% block title %}Books | Book Recommender{% endblock %}
 
 {% block content %}
-  <h1 class="mb-3">图书列表</h1>
-  <form action="{% url 'catalog:book_list' %}" method="get" class="row g-2 mb-4">
-    <div class="col-sm-9 col-md-10">
-      <label for="book-search" class="visually-hidden">搜索图书</label>
-      <input id="book-search" class="form-control" type="search" name="q" value="{{ query }}" placeholder="搜索书名或作者">
-    </div>
-    <div class="col-sm-3 col-md-2">
-      <button class="btn btn-primary w-100" type="submit">搜索</button>
-    </div>
-  </form>
+  <section class="content-panel mb-4">
+    <p class="section-kicker">Catalog</p>
+    <h1 class="page-title">Browse the library</h1>
+    <p class="section-description">Search by title or author, then open a detail page to inspect metadata, similar books, and rating actions.</p>
+    <form action="{% url 'catalog:book_list' %}" method="get" class="row g-2 mt-3">
+      <div class="col-md-9">
+        <label for="book-search" class="visually-hidden">Search books</label>
+        <input id="book-search" class="form-control" type="search" name="q" value="{{ query }}" placeholder="Search by title or author">
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-dark w-100" type="submit">Search catalog</button>
+      </div>
+    </form>
+    {% if query %}
+      <p class="meta-copy mt-3 mb-0">Showing results for "{{ query }}".</p>
+    {% endif %}
+  </section>
 
-  {% if query %}
-    <p class="text-muted">搜索：{{ query }}</p>
-  {% endif %}
-
-  {% if books %}
-    <div class="row g-3">
-      {% for book in books %}
-        <div class="col-md-4">{% include "catalog/_book_card.html" with book=book %}</div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <p class="text-muted">没有找到图书。</p>
-  {% endif %}
+  <section class="content-panel">
+    {% if books %}
+      <div class="row g-4">
+        {% for book in books %}
+          <div class="col-sm-6 col-xl-3">
+            {% include "catalog/_book_card.html" with book=book %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty-state mb-0">No books matched the current search.</p>
+    {% endif %}
+  </section>
 {% endblock %}

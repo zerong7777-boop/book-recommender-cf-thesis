@@ -1,46 +1,162 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
+{% load static %}
 
-{% block title %}首页 - Book Recommender{% endblock %}
+{% block title %}Home | Book Recommender{% endblock %}
 
 {% block content %}
-  <section class="mb-4">
-    <h1 class="mb-3">图书推荐</h1>
-    <form action="{% url 'catalog:book_list' %}" method="get" class="row g-2">
-      <div class="col-sm-9 col-md-10">
-        <label for="catalog-search" class="visually-hidden">搜索图书</label>
-        <input id="catalog-search" class="form-control" type="search" name="q" placeholder="搜索书名或作者">
+  <section class="hero-shell mb-4 mb-lg-5">
+    <div class="row g-0">
+      <div class="col-lg-6">
+        <div class="hero-copy">
+          <p class="eyebrow">Personalized book discovery</p>
+          <h1 class="hero-title">Discover your next read</h1>
+          <p class="mb-4">Browse the catalog, rate books you know, and compare hot-start, cold-start, and personalized recommendation flows inside one thesis demo.</p>
+          <div class="hero-cta-group mb-4">
+            <a class="btn btn-dark" href="{% url 'catalog:book_list' %}">Browse books</a>
+            {% if request.user.is_authenticated %}
+              <a class="btn btn-outline-dark" href="{% url 'recommendations:list' %}">Recommendation center</a>
+            {% else %}
+              <a class="btn btn-outline-dark" href="{% url 'accounts:login' %}">Log in</a>
+            {% endif %}
+          </div>
+          <ul class="status-list">
+            <li class="status-pill">Current mode: {{ recommendation_block.state }}</li>
+            <li class="status-pill">Offline + online read architecture</li>
+          </ul>
+          <div class="search-panel">
+            <form action="{% url 'catalog:book_list' %}" method="get" class="row g-2 align-items-center">
+              <div class="col-md-8">
+                <label for="catalog-search" class="visually-hidden">Search books</label>
+                <input id="catalog-search" class="form-control" type="search" name="q" placeholder="Search by title or author">
+              </div>
+              <div class="col-md-4">
+                <button class="btn btn-outline-dark w-100" type="submit">Search catalog</button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
-      <div class="col-sm-3 col-md-2">
-        <button class="btn btn-primary w-100" type="submit">搜索</button>
+      <div class="col-lg-6">
+        <div class="hero-image-wrap">
+          <img src="{% static 'images/booksaw-banner-1.jpg' %}" alt="Book storefront shelf">
+        </div>
       </div>
-    </form>
+    </div>
   </section>
 
-  <section class="mb-4">
-    <h2 class="h4">分类浏览</h2>
+  <section id="category-section" class="content-panel mb-4">
+    <div class="section-header-row">
+      <div>
+        <p class="section-kicker">Shelf map</p>
+        <h2 class="section-title h1 mb-0">Browse categories</h2>
+      </div>
+      <a class="btn btn-outline-dark btn-sm" href="{% url 'catalog:book_list' %}">See all books</a>
+    </div>
     {% if categories %}
-      <div class="list-group">
+      <div class="category-pill-list">
         {% for category in categories %}
-          <a class="list-group-item list-group-item-action" href="{% url 'catalog:category_list' category.slug %}">
-            {{ category.name }}
-          </a>
+          <a class="category-pill" href="{% url 'catalog:category_list' category.slug %}">{{ category.name }}</a>
         {% endfor %}
       </div>
     {% else %}
-      <p class="text-muted">暂无分类。</p>
+      <p class="empty-state mb-0">Categories will appear here after the catalog is seeded.</p>
     {% endif %}
   </section>
 
-  <section>
-    <h2 class="h4">推荐</h2>
+  <section class="content-panel">
+    <div class="section-header-row">
+      <div>
+        <p class="section-kicker">Recommendation layer</p>
+        <h2 class="section-title h1 mb-0">Recommendation picks</h2>
+      </div>
+      {% if request.user.is_authenticated %}
+        <a class="btn btn-outline-dark btn-sm" href="{% url 'recommendations:list' %}">Open full list</a>
+      {% endif %}
+    </div>
     {% if recommendation_block.items %}
-      <div class="row g-3">
+      <div class="row g-4">
         {% for book in recommendation_block.items %}
-          <div class="col-md-4">{% include "catalog/_book_card.html" with book=book %}</div>
+          <div class="col-sm-6 col-xl-3">
+            {% include "catalog/_book_card.html" with book=book %}
+          </div>
         {% endfor %}
       </div>
     {% else %}
-      <p class="text-muted">暂无推荐内容。</p>
+      <p class="empty-state mb-0">Recommendation results are not ready yet. Seed demo data or run the offline rebuild to populate this section.</p>
     {% endif %}
+  </section>
+
+  <section class="content-panel mt-4">
+    <div class="section-header-row">
+      <div>
+        <p class="section-kicker">Demo flow</p>
+        <h2 class="section-title h1 mb-0">Two demo paths</h2>
+      </div>
+    </div>
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <article class="path-card h-100">
+          <p class="small-label mb-2">Seeded mature account</p>
+          <h3 class="h4 mb-3">Jump straight into personalized recommendations</h3>
+          <p class="mb-4">Use the demo reader account to show a ready-made recommendation state, existing ratings, and cached results without waiting for a fresh rebuild.</p>
+          <div class="panel-actions">
+            <a class="btn btn-dark btn-sm" href="{% url 'accounts:login' %}">Log in</a>
+            <a class="btn btn-outline-dark btn-sm" href="{% url 'accounts:profile' %}">Open personal center</a>
+          </div>
+        </article>
+      </div>
+      <div class="col-lg-6">
+        <article class="path-card h-100">
+          <p class="small-label mb-2">Live cold-start flow</p>
+          <h3 class="h4 mb-3">Register, rate, and trigger the offline loop</h3>
+          <p class="mb-4">Start from a clean account, rate a few titles, then inspect how the system moves from cold-start guidance into refreshed recommendation results.</p>
+          <div class="panel-actions">
+            <a class="btn btn-dark btn-sm" href="{% url 'accounts:register' %}">Create account</a>
+            <a class="btn btn-outline-dark btn-sm" href="{% url 'ratings:first-rate' %}">Start rating</a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="content-panel mt-4 overflow-hidden">
+    <div class="row g-0 align-items-stretch">
+      <div class="col-lg-7">
+        <div class="hero-copy">
+          <p class="section-kicker">Evaluation surface</p>
+          <h2 class="section-title h1 mb-3">Experiment evidence</h2>
+          <p class="section-description mb-4">Open the offline evaluation lab to inspect K-value checkpoints, algorithm summaries, and the artifact-backed metrics used in the thesis write-up.</p>
+          <div class="row g-3 mb-4">
+            <div class="col-sm-4">
+              <article class="metric-card h-100">
+                <p class="small-label mb-1">Guest path</p>
+                <p class="metric-card-value">Hot</p>
+                <p class="small-label mb-0">Fallback recommendations before login.</p>
+              </article>
+            </div>
+            <div class="col-sm-4">
+              <article class="metric-card h-100">
+                <p class="small-label mb-1">New reader</p>
+                <p class="metric-card-value">Cold</p>
+                <p class="small-label mb-0">Guided rating workflow for sparse user data.</p>
+              </article>
+            </div>
+            <div class="col-sm-4">
+              <article class="metric-card h-100">
+                <p class="small-label mb-1">Active reader</p>
+                <p class="metric-card-value">ItemCF</p>
+                <p class="small-label mb-0">Offline-generated personalized list.</p>
+              </article>
+            </div>
+          </div>
+          <a class="btn btn-dark" href="{% url 'evaluations:results' %}">Open experiment results</a>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="hero-image-wrap">
+          <img src="{% static 'images/booksaw-banner-2.jpg' %}" alt="Reading desk and books">
+        </div>
+      </div>
+    </div>
   </section>
 {% endblock %}

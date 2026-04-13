@@ -1,33 +1,74 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
-{% block title %}{{ book.title }} - Book Recommender{% endblock %}
+{% block title %}{{ book.title }} | Book Recommender{% endblock %}
 
 {% block content %}
-  <article class="mb-4">
-    <h1>{{ book.title }}</h1>
-    <p class="text-muted">{{ book.author }}</p>
-    <p>
-      <a href="{% url 'catalog:category_list' book.category.slug %}">{{ book.category.name }}</a>
-      {% if book.publication_year %} · {{ book.publication_year }}{% endif %}
-      {% if book.publisher %} · {{ book.publisher }}{% endif %}
-    </p>
-    <p>{{ book.description }}</p>
-    <p class="text-muted">评分 {{ book.average_rating }} / 5（{{ book.rating_count }} 人评价）</p>
-  </article>
+  <section class="content-panel mb-4">
+    <div class="row g-4 align-items-stretch">
+      <div class="col-lg-4">
+        <div class="detail-cover">
+          {% if book.cover_url %}
+            <img src="{{ book.cover_url }}" alt="{{ book.title }}">
+          {% else %}
+            <div class="detail-cover-fallback">{{ book.title|first|upper }}</div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-lg-8">
+        <p class="section-kicker">Book detail</p>
+        <h1 class="page-title">{{ book.title }}</h1>
+        <p class="lead mb-3">{{ book.author }}</p>
+        <ul class="detail-meta-list mb-4">
+          <li class="detail-meta"><a href="{% url 'catalog:category_list' book.category.slug %}">{{ book.category.name }}</a></li>
+          {% if book.publication_year %}<li class="detail-meta">{{ book.publication_year }}</li>{% endif %}
+          {% if book.publisher %}<li class="detail-meta">{{ book.publisher }}</li>{% endif %}
+          <li class="detail-meta">Average {{ book.average_rating }} / 5</li>
+          <li class="detail-meta">{{ book.rating_count }} ratings</li>
+        </ul>
+        <p class="section-description mb-4">{{ book.description|default:"No description is available for this title yet." }}</p>
+        <div class="detail-actions">
+          {% if request.user.is_authenticated %}
+            <a class="btn btn-dark" href="{% url 'ratings:rate-book' book.pk %}">Rate this book</a>
+            <a class="btn btn-outline-dark" href="{% url 'recommendations:list' %}">Open recommendations</a>
+          {% else %}
+            <a class="btn btn-dark" href="{% url 'accounts:login' %}">Log in to rate</a>
+            <a class="btn btn-outline-dark" href="{% url 'accounts:register' %}">Create account</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
 
-  <section>
-    <h2 class="h4">相似图书</h2>
+  {% if recommendation_explanation %}
+    <section class="state-banner mb-4">
+      <p class="section-kicker">Recommendation explanation</p>
+      <h2 class="section-title h1 mb-3">Why this book is recommended to you</h2>
+      <div class="panel-actions mb-3">
+        <span class="status-pill">Rank #{{ recommendation_explanation.rank }}</span>
+        <span class="status-pill">{{ recommendation_explanation.state }}</span>
+      </div>
+      <p class="mb-0">{{ recommendation_explanation.reason }}</p>
+    </section>
+  {% endif %}
+
+  <section class="content-panel">
+    <div class="section-header-row">
+      <div>
+        <p class="section-kicker">Neighbor titles</p>
+        <h2 class="section-title h1 mb-0">Similar books</h2>
+      </div>
+    </div>
     {% if similar_books %}
-      <div class="row g-3">
+      <div class="row g-4">
         {% for item in similar_books %}
-          <div class="col-md-4">
+          <div class="col-sm-6 col-xl-4">
             {% include "catalog/_book_card.html" with book=item.target_book %}
-            <p class="small text-muted mt-2 mb-0">Similarity score: {{ item.score|floatformat:2 }}</p>
+            <p class="small-label mt-2 mb-0">Similarity score: {{ item.score|floatformat:2 }}</p>
           </div>
         {% endfor %}
       </div>
     {% else %}
-      <p class="text-muted">暂无相似图书。</p>
+      <p class="empty-state mb-0">No similar books are available yet. Run the offline rebuild to generate similarity results.</p>
     {% endif %}
   </section>
 {% endblock %}

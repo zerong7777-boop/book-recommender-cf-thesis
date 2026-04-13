@@ -78,5 +78,30 @@ def homepage_recommendation_block(user):
     return recommendation_block_for_user(user)
 
 
+def recommendation_preview_for_user(user, limit: int = 3):
+    block = recommendation_block_for_user(user)
+    preview_items = block["payload_items"][:limit]
+    return {
+        "state": block["state"],
+        "generated_at": block["payload"]["generated_at"] if block["payload"] else None,
+        "items": preview_items,
+    }
+
+
+def recommendation_explanation_for_book(user, book):
+    if not getattr(user, "is_authenticated", False):
+        return None
+    block = recommendation_block_for_user(user)
+    for item in block["payload_items"]:
+        if int(item["book_id"]) == int(book.id):
+            return {
+                "state": block["state"],
+                "generated_at": block["payload"]["generated_at"] if block["payload"] else None,
+                "rank": item["rank"],
+                "reason": item["reason"],
+            }
+    return None
+
+
 def similar_books_for_detail(book, user):
     return SimilarBookResult.objects.select_related("target_book", "target_book__category").filter(source_book=book)[:6]

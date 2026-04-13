@@ -32,7 +32,7 @@ def test_thesis_demo_smoke_flow(client):
     recommendations_response = client.get(reverse("recommendations:list"))
     assert recommendations_response.status_code == 200
     recommendations_html = recommendations_response.content.decode()
-    assert "Recommendation Results" in recommendations_html
+    assert "Recommendation center" in recommendations_html
     assert "Popular fallback because ItemCF had sparse data" in recommendations_html
     assert "demo reader" not in recommendations_html.lower()
 
@@ -46,7 +46,7 @@ def test_thesis_demo_smoke_flow(client):
     dashboard_response = client.get(reverse("dashboard:home"))
     assert dashboard_response.status_code == 200
     dashboard_html = dashboard_response.content.decode()
-    assert "Dashboard" in dashboard_html
+    assert "Operations overview" in dashboard_html
     assert "rebuild_recommendations" in dashboard_html
 
     assert demo_user.is_staff is False

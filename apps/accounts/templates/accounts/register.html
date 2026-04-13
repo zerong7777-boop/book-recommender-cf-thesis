@@ -1,12 +1,19 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Register | Book Recommender{% endblock %}
 
 {% block content %}
-  <h1>Create account</h1>
-  <form method="post" class="card card-body">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-primary">Register</button>
-  </form>
+  <section class="auth-panel">
+    <p class="section-kicker">New account</p>
+    <h1 class="page-title">Create account</h1>
+    <p class="auth-hint">Register a local reader account to exercise cold-start guidance, rating submission, and personalized recommendations.</p>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <div class="panel-actions">
+        <button type="submit" class="btn btn-dark">Register</button>
+        <a class="btn btn-outline-dark" href="{% url 'accounts:login' %}">Log in</a>
+      </div>
+    </form>
+  </section>
 {% endblock %}

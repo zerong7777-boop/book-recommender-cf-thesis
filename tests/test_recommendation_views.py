@@ -85,3 +85,43 @@ def test_book_detail_page_renders_similar_books_block(client):
     content = response.content.decode()
     assert "Similar Book" in content
     assert "0.91" in content
+
+
+@pytest.mark.django_db
+def test_book_detail_page_shows_personalized_recommendation_reason_for_logged_in_user(client):
+    cache.clear()
+    user = get_user_model().objects.create_user(username="detail-reader", email="detail@example.com", password="ReaderPass123")
+    category = Category.objects.create(name="History", slug="history")
+    rated_books = [create_book(category=category, title=f"Rated {idx}") for idx in range(1, 4)]
+    target = create_book(category=category, title="Recommended Detail Book")
+    for book in rated_books:
+        UserRating.objects.create(user=user, book=book, score=5)
+    cache.set(
+        user_recommendation_cache_key(user.id),
+        {
+            "generated_at": timezone.now().isoformat(),
+            "strategy": "itemcf",
+            "items": [
+                {
+                    "book_id": target.id,
+                    "title": target.title,
+                    "author": target.author,
+                    "category": category.name,
+                    "category_slug": category.slug,
+                    "cover_url": target.cover_url,
+                    "average_rating": float(target.average_rating),
+                    "reason": "Because you liked Rated 1",
+                    "rank": 1,
+                }
+            ],
+        },
+        timeout=None,
+    )
+
+    client.login(username="detail-reader", password="ReaderPass123")
+    response = client.get(reverse("catalog:book_detail", kwargs={"pk": target.pk}))
+
+    content = response.content.decode()
+    assert "Why this book is recommended to you" in content
+    assert "Because you liked Rated 1" in content
+    assert "Rank #1" in content

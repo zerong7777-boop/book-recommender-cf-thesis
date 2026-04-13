@@ -11,6 +11,39 @@ def test_homepage_loads(client):
 
 
 @pytest.mark.django_db
+def test_homepage_shows_primary_navigation_entry_points(client):
+    response = client.get(reverse("catalog:home"))
+
+    content = response.content.decode()
+
+    assert "Log in" in content
+    assert "Register" in content
+    assert reverse("catalog:book_list") in content
+
+
+@pytest.mark.django_db
+def test_homepage_highlights_book_discovery_sections(client):
+    response = client.get(reverse("catalog:home"))
+
+    content = response.content.decode()
+
+    assert "Discover your next read" in content
+    assert "Browse categories" in content
+    assert "Recommendation picks" in content
+
+
+@pytest.mark.django_db
+def test_homepage_surfaces_demo_paths_and_experiment_entry(client):
+    response = client.get(reverse("catalog:home"))
+
+    content = response.content.decode()
+
+    assert "Two demo paths" in content
+    assert "Experiment evidence" in content
+    assert reverse("evaluations:results") in content
+
+
+@pytest.mark.django_db
 def test_search_filters_books_by_title(client):
     category = Category.objects.create(name="Fantasy", slug="fantasy")
     Book.objects.create(

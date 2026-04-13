@@ -1,21 +1,103 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
   <head>
-    {% load static %}
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Book Recommender{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="{% static 'css/site.css' %}" rel="stylesheet">
   </head>
-  <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
-      <div class="container">
-        <a class="navbar-brand fw-semibold" href="/">Book Recommender</a>
+  <body class="{% block body_class %}storefront-page{% endblock %}">
+    <div class="announcement-bar">
+      <div class="container-xxl d-flex flex-wrap justify-content-between gap-2">
+        <span>Offline recommendation demo for the thesis system.</span>
+        <span class="announcement-meta">Search, rate, recompute, and verify.</span>
       </div>
-    </nav>
-    <main class="container py-4">
-      {% block content %}{% endblock %}
+    </div>
+
+    <header class="site-header">
+      <div class="container-xxl">
+        <nav class="navbar navbar-expand-lg site-navbar">
+          <a class="navbar-brand site-brand" href="{% url 'catalog:home' %}">
+            <span class="site-brand-mark">B</span>
+            <span>
+              <span class="site-brand-title">BookVerse</span>
+              <span class="site-brand-subtitle">Recommendation Studio</span>
+            </span>
+          </a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#siteNavbar" aria-controls="siteNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="siteNavbar">
+            <ul class="navbar-nav mx-auto align-items-lg-center gap-lg-2">
+              <li class="nav-item"><a class="nav-link" href="{% url 'catalog:home' %}">Home</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'catalog:book_list' %}">Browse books</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'catalog:home' %}#category-section">Categories</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'evaluations:results' %}">Experiments</a></li>
+              {% if request.user.is_authenticated %}
+                <li class="nav-item"><a class="nav-link" href="{% url 'recommendations:list' %}">Recommendations</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'accounts:profile' %}">Profile</a></li>
+                {% if request.user.is_staff %}
+                  <li class="nav-item"><a class="nav-link" href="{% url 'dashboard:home' %}">Dashboard</a></li>
+                {% endif %}
+              {% endif %}
+            </ul>
+            <div class="site-actions d-flex flex-wrap align-items-center gap-2">
+              {% if request.user.is_authenticated %}
+                <span class="user-chip">{{ request.user.username }}</span>
+                <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-dark btn-sm site-action-button">Log out</button>
+                </form>
+              {% else %}
+                <a class="btn btn-outline-dark btn-sm site-action-button" href="{% url 'accounts:login' %}">Log in</a>
+                <a class="btn btn-dark btn-sm site-action-button" href="{% url 'accounts:register' %}">Register</a>
+              {% endif %}
+            </div>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main class="page-shell">
+      <div class="container-xxl py-4 py-lg-5">
+        {% block content %}{% endblock %}
+      </div>
     </main>
+
+    <footer class="site-footer">
+      <div class="container-xxl">
+        <div class="row g-4 align-items-start">
+          <div class="col-lg-5">
+            <p class="footer-eyebrow">Book recommendation thesis demo</p>
+            <h2 class="footer-title">A local bookstore interface backed by offline collaborative filtering.</h2>
+          </div>
+          <div class="col-sm-6 col-lg-3">
+            <h3 class="footer-heading">Explore</h3>
+            <ul class="footer-links">
+              <li><a href="{% url 'catalog:book_list' %}">All books</a></li>
+              <li><a href="{% url 'catalog:home' %}#category-section">Categories</a></li>
+              <li><a href="{% url 'evaluations:results' %}">Experiment results</a></li>
+            </ul>
+          </div>
+          <div class="col-sm-6 col-lg-4">
+            <h3 class="footer-heading">Account</h3>
+            <ul class="footer-links">
+              {% if request.user.is_authenticated %}
+                <li><a href="{% url 'accounts:profile' %}">Personal center</a></li>
+                <li><a href="{% url 'recommendations:list' %}">Recommendation center</a></li>
+                <li><a href="{% url 'accounts:password_change' %}">Password change</a></li>
+              {% else %}
+                <li><a href="{% url 'accounts:login' %}">Log in</a></li>
+                <li><a href="{% url 'accounts:register' %}">Register</a></li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>

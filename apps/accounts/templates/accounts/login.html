@@ -1,12 +1,19 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Log in | Book Recommender{% endblock %}
 
 {% block content %}
-  <h1>Log in</h1>
-  <form method="post" class="card card-body">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-primary">Log in</button>
-  </form>
+  <section class="auth-panel">
+    <p class="section-kicker">Account access</p>
+    <h1 class="page-title">Log in</h1>
+    <p class="auth-hint">Use a seeded demo account to jump straight to ratings, recommendations, and dashboard verification.</p>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <div class="panel-actions">
+        <button type="submit" class="btn btn-dark">Log in</button>
+        <a class="btn btn-outline-dark" href="{% url 'accounts:register' %}">Register</a>
+      </div>
+    </form>
+  </section>
 {% endblock %}

@@ -87,6 +87,29 @@ conda run -n bookrec311 python manage.py evaluate_recommenders
 conda run -n bookrec311 python manage.py runserver
 ```
 
+## Quick local demo mode
+
+If you only want to click through the app locally without preparing `.env`, MySQL credentials, and Redis first, use the SQLite + locmem demo mode:
+
+```powershell
+conda run -n bookrec311 python manage.py migrate --settings=book_recommender.settings_local_demo
+$env:DJANGO_SETTINGS_MODULE='book_recommender.settings_local_demo'
+conda run -n bookrec311 python scripts/init_demo_data.py
+Remove-Item Env:DJANGO_SETTINGS_MODULE
+conda run -n bookrec311 python manage.py runserver 127.0.0.1:8000 --settings=book_recommender.settings_local_demo
+```
+
+Detailed click-by-click manual test instructions live in [MANUAL_TEST_GUIDE.md](E:/projects/book-recommender-cf/MANUAL_TEST_GUIDE.md).
+
+## UI base
+
+The current thesis demo UI keeps the existing Django backend and adapts two mature open-source layout directions for the visible product layer:
+
+1. A `Booksaw`-inspired bookstore storefront for homepage, catalog, recommendations, and account pages
+2. A `Tabler`-style operations layout for the staff dashboard
+
+This refresh is intentionally template-first. The collaborative-filtering pipeline, account flow, and dashboard actions still use the original Django views and services.
+
 ## Demo flow
 
 1. Open the site in the browser.

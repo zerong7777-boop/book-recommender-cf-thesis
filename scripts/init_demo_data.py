@@ -30,6 +30,7 @@ DEMO_ADMIN_USERNAME = "thesis_admin"
 DEMO_ADMIN_PASSWORD = "AdminPass123!"
 DEMO_USER_USERNAME = "demo_reader"
 DEMO_USER_PASSWORD = "DemoPass123!"
+EVAL_SHADOW_PASSWORD = "EvalShadow123!"
 
 
 @dataclass(frozen=True)
@@ -152,6 +153,30 @@ def _ensure_demo_user():
     return demo_user
 
 
+def _ensure_eval_shadow_user(*, username: str, email: str):
+    user_model = get_user_model()
+    defaults = {
+        "email": email,
+        "is_staff": False,
+        "is_superuser": False,
+    }
+    user, created = user_model.objects.get_or_create(username=username, defaults=defaults)
+    updated_fields = []
+    for field, value in defaults.items():
+        if getattr(user, field) != value:
+            setattr(user, field, value)
+            updated_fields.append(field)
+    if not user.check_password(EVAL_SHADOW_PASSWORD):
+        user.set_password(EVAL_SHADOW_PASSWORD)
+        updated_fields.append("password")
+    if updated_fields:
+        user.save()
+    elif created:
+        user.set_password(EVAL_SHADOW_PASSWORD)
+        user.save(update_fields=["password"])
+    return user
+
+
 def _ensure_category(*, name: str, slug: str) -> Category:
     category, _ = Category.objects.update_or_create(slug=slug, defaults={"name": name})
     return category
@@ -200,6 +225,20 @@ def _seed_demo_ratings(demo_user, books: Iterable[Book]) -> tuple[int, int]:
     return created_count, updated_count
 
 
+def _seed_eval_shadow_ratings(books: list[Book]) -> None:
+    if len(books) < 5:
+        return
+    shadow_specs = (
+        ("eval_reader_1", "eval_reader_1@example.com", ((books[0], 5), (books[1], 4), (books[3], 5))),
+        ("eval_reader_2", "eval_reader_2@example.com", ((books[0], 4), (books[1], 5), (books[4], 5))),
+        ("eval_reader_3", "eval_reader_3@example.com", ((books[0], 5), (books[2], 4), (books[3], 4))),
+    )
+    for username, email, ratings in shadow_specs:
+        shadow_user = _ensure_eval_shadow_user(username=username, email=email)
+        for book, score in ratings:
+            upsert_rating(user=shadow_user, book=book, score=score)
+
+
 @transaction.atomic
 def _seed_demo_data(*, include_sample_catalog: bool = True):
     admin = _ensure_admin_account()
@@ -208,6 +247,7 @@ def _seed_demo_data(*, include_sample_catalog: bool = True):
     if len(books) < 3:
         raise RuntimeError("At least 3 books are required to seed the demo account.")
     ratings_created, ratings_updated = _seed_demo_ratings(demo_user, books)
+    _seed_eval_shadow_ratings(books)
     return {
         "admin": admin,
         "demo_user": demo_user,

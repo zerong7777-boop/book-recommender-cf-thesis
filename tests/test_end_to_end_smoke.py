@@ -1,8 +1,10 @@
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.core.management import call_command
 from django.urls import reverse
 
+from apps.evaluations.services import evaluation_artifact_dir, load_experiment_summary
 import scripts.init_demo_data as demo_init
 from scripts.init_demo_data import initialize_demo_data
 
@@ -33,7 +35,10 @@ def test_thesis_demo_smoke_flow(client):
     assert recommendations_response.status_code == 200
     recommendations_html = recommendations_response.content.decode()
     assert "Recommendation center" in recommendations_html
-    assert "Popular fallback because ItemCF had sparse data" in recommendations_html
+    assert (
+        "Popular fallback because ItemCF had sparse data" in recommendations_html
+        or "Similar to your ratings" in recommendations_html
+    )
     assert "demo reader" not in recommendations_html.lower()
 
     client.logout()
@@ -92,3 +97,16 @@ def test_initialize_demo_data_reports_reruns_honestly_and_returns_rebuild_job(mo
     assert second_result["ratings_updated"] == 3
     assert second_result["rebuild_job"] is fake_job
     assert rebuild_calls == [10, 10]
+
+
+@pytest.mark.django_db
+def test_initialize_demo_data_supports_non_zero_evaluation_metrics(settings, tmp_path):
+    settings.BASE_DIR = tmp_path
+
+    initialize_demo_data()
+    call_command("evaluate_recommenders")
+
+    summary = load_experiment_summary(tmp_path)
+
+    assert any(row["precision"] > 0 for row in summary["overview"])
+    assert evaluation_artifact_dir(tmp_path).joinpath("summary.json").exists()

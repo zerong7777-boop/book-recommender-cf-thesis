@@ -21,8 +21,9 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 
 from apps.catalog.models import Book, Category
+from apps.ratings.models import UserRating
 from apps.ratings.services import upsert_rating
-from apps.recommendations.management.commands.rebuild_recommendations import Command as RebuildRecommendationsCommand
+from apps.recommendations.services import rebuild_recommendations_for_all_users
 
 
 DEMO_ADMIN_USERNAME = "thesis_admin"
@@ -184,33 +185,45 @@ def _seed_sample_catalog() -> list[Book]:
     return books
 
 
-def _seed_demo_ratings(demo_user, books: Iterable[Book]) -> int:
-    count = 0
+def _seed_demo_ratings(demo_user, books: Iterable[Book]) -> tuple[int, int]:
+    existing_book_ids = set(
+        UserRating.objects.filter(user=demo_user, book__in=list(books)).values_list("book_id", flat=True)
+    )
+    created_count = 0
+    updated_count = 0
     for score, book in zip((5, 4, 5), books):
         upsert_rating(user=demo_user, book=book, score=score)
-        count += 1
-    return count
+        if book.id in existing_book_ids:
+            updated_count += 1
+        else:
+            created_count += 1
+    return created_count, updated_count
 
 
 @transaction.atomic
-def initialize_demo_data(*, include_sample_catalog: bool = True, rebuild_recommendations: bool = True):
+def _seed_demo_data(*, include_sample_catalog: bool = True):
     admin = _ensure_admin_account()
     demo_user = _ensure_demo_user()
     books = _seed_sample_catalog() if include_sample_catalog else list(Book.objects.order_by("id")[:3])
     if len(books) < 3:
         raise RuntimeError("At least 3 books are required to seed the demo account.")
-    rating_count = _seed_demo_ratings(demo_user, books)
-    job = None
-    if rebuild_recommendations:
-        command = RebuildRecommendationsCommand()
-        job = command.handle(top_k=10)
+    ratings_created, ratings_updated = _seed_demo_ratings(demo_user, books)
     return {
         "admin": admin,
         "demo_user": demo_user,
         "books": books,
-        "ratings_created": rating_count,
-        "rebuild_job": job,
+        "ratings_created": ratings_created,
+        "ratings_updated": ratings_updated,
     }
+
+
+def initialize_demo_data(*, include_sample_catalog: bool = True, rebuild_recommendations: bool = True):
+    result = _seed_demo_data(include_sample_catalog=include_sample_catalog)
+    job = None
+    if rebuild_recommendations:
+        job = rebuild_recommendations_for_all_users(top_k=10)
+    result["rebuild_job"] = job
+    return result
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -231,7 +244,8 @@ def main() -> int:
         "Demo data initialized: "
         f"admin={result['admin'].username}, "
         f"demo_user={result['demo_user'].username}, "
-        f"ratings_created={result['ratings_created']}"
+        f"ratings_created={result['ratings_created']}, "
+        f"ratings_updated={result['ratings_updated']}"
     )
     return 0
 

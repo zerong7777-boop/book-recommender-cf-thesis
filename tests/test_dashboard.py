@@ -13,6 +13,23 @@ def test_dashboard_requires_staff(client):
 
 
 @pytest.mark.django_db
+def test_non_staff_user_cannot_open_dashboard_or_trigger_rebuild(client):
+    user = get_user_model().objects.create_user(
+        username="reader",
+        email="reader@example.com",
+        password="ReaderPass123",
+        is_staff=False,
+    )
+
+    client.login(username="reader", password="ReaderPass123")
+    home_response = client.get(reverse("dashboard:home"))
+    trigger_response = client.post(reverse("dashboard:trigger_rebuild"))
+
+    assert home_response.status_code == 302
+    assert trigger_response.status_code == 302
+
+
+@pytest.mark.django_db
 def test_staff_dashboard_shows_latest_job(client):
     staff = get_user_model().objects.create_user(
         username="admin",
@@ -49,14 +66,39 @@ def test_staff_can_trigger_rebuild(client, monkeypatch):
     )
     called = {}
 
-    def fake_call_command(name):
-        called["name"] = name
+    def fake_launch():
+        called["launched"] = True
 
-    monkeypatch.setattr("apps.dashboard.views.call_command", fake_call_command)
+    monkeypatch.setattr("apps.dashboard.views._launch_rebuild_job", fake_launch)
 
     client.login(username="operator", password="AdminPass123")
     response = client.post(reverse("dashboard:trigger_rebuild"))
 
     assert response.status_code == 302
     assert response.url == reverse("dashboard:home")
-    assert called["name"] == "rebuild_recommendations"
+    assert called["launched"] is True
+
+
+@pytest.mark.django_db
+def test_trigger_rebuild_skips_launch_when_lock_exists(client, monkeypatch):
+    staff = get_user_model().objects.create_user(
+        username="locked",
+        email="locked@example.com",
+        password="AdminPass123",
+        is_staff=True,
+    )
+    called = {"launched": False}
+
+    def fake_launch():
+        called["launched"] = True
+
+    monkeypatch.setattr("apps.dashboard.views._launch_rebuild_job", fake_launch)
+    from django.core.cache import cache
+
+    cache.set("dashboard:rebuild-lock", "1", timeout=60)
+    client.login(username="locked", password="AdminPass123")
+    response = client.post(reverse("dashboard:trigger_rebuild"))
+
+    assert response.status_code == 302
+    assert response.url == reverse("dashboard:home")
+    assert called["launched"] is False

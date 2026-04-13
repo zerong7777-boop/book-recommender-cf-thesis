@@ -16,9 +16,12 @@
         {% else %}
           <p class="text-muted">No offline job has run yet.</p>
         {% endif %}
+        {% if rebuild_in_progress %}
+          <p class="text-warning">A rebuild is already running.</p>
+        {% endif %}
         <form method="post" action="{% url 'dashboard:trigger_rebuild' %}">
           {% csrf_token %}
-          <button class="btn btn-primary" type="submit">Trigger rebuild</button>
+          <button class="btn btn-primary" type="submit" {% if rebuild_in_progress %}disabled{% endif %}>Trigger rebuild</button>
         </form>
       </div>
     </div>
@@ -27,7 +30,7 @@
   <section>
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h2 class="h5 mb-0">Recent recommendation results</h2>
-      <a class="btn btn-outline-secondary btn-sm" href="/admin/">Open Django Admin</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'admin:index' %}">Open Django Admin</a>
     </div>
     {% if latest_results %}
       <div class="table-responsive">

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}{{ category.name }} - Book Recommender{% endblock %}
+
+{% block content %}
+  <h1 class="mb-3">{{ category.name }}</h1>
+  {% if books %}
+    <div class="row g-3">
+      {% for book in books %}
+        <div class="col-md-4">{% include "catalog/_book_card.html" with book=book %}</div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted">该分类暂无图书。</p>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - Book Recommender{% endblock %}
+
+{% block content %}
+  <section class="mb-4">
+    <h1 class="mb-3">图书推荐</h1>
+    <form action="{% url 'catalog:book_list' %}" method="get" class="row g-2">
+      <div class="col-sm-9 col-md-10">
+        <label for="catalog-search" class="visually-hidden">搜索图书</label>
+        <input id="catalog-search" class="form-control" type="search" name="q" placeholder="搜索书名或作者">
+      </div>
+      <div class="col-sm-3 col-md-2">
+        <button class="btn btn-primary w-100" type="submit">搜索</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="mb-4">
+    <h2 class="h4">分类浏览</h2>
+    {% if categories %}
+      <div class="list-group">
+        {% for category in categories %}
+          <a class="list-group-item list-group-item-action" href="{% url 'catalog:category_list' category.slug %}">
+            {{ category.name }}
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted">暂无分类。</p>
+    {% endif %}
+  </section>
+
+  <section>
+    <h2 class="h4">推荐</h2>
+    {% if recommendation_block.items %}
+      <div class="row g-3">
+        {% for book in recommendation_block.items %}
+          <div class="col-md-4">{% include "catalog/_book_card.html" with book=book %}</div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted">暂无推荐内容。</p>
+    {% endif %}
+  </section>
+{% endblock %}

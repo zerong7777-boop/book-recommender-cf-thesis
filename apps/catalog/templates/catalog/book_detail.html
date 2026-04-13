@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}{{ book.title }} - Book Recommender{% endblock %}
+
+{% block content %}
+  <article class="mb-4">
+    <h1>{{ book.title }}</h1>
+    <p class="text-muted">{{ book.author }}</p>
+    <p>
+      <a href="{% url 'catalog:category_list' book.category.slug %}">{{ book.category.name }}</a>
+      {% if book.publication_year %} · {{ book.publication_year }}{% endif %}
+      {% if book.publisher %} · {{ book.publisher }}{% endif %}
+    </p>
+    <p>{{ book.description }}</p>
+    <p class="text-muted">评分 {{ book.average_rating }} / 5（{{ book.rating_count }} 人评价）</p>
+  </article>
+
+  <section>
+    <h2 class="h4">相似图书</h2>
+    {% if similar_books %}
+      <div class="row g-3">
+        {% for book in similar_books %}
+          <div class="col-md-4">{% include "catalog/_book_card.html" with book=book %}</div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted">暂无相似图书。</p>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -12,3 +12,4 @@ build/
 htmlcov/
 *.egg-info/
 .worktrees/
+artifacts/evaluations/summary.json

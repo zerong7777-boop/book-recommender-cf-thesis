@@ -53,3 +53,13 @@ def test_load_experiment_summary_returns_empty_for_malformed_json(tmp_path):
     from apps.evaluations.services import load_experiment_summary
 
     assert load_experiment_summary(tmp_path) == {"overview": [], "algorithms": []}
+
+
+def test_load_experiment_summary_returns_empty_for_invalid_utf8(tmp_path):
+    artifact_dir = evaluation_artifact_dir(tmp_path)
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    (artifact_dir / "summary.json").write_bytes(b"\xff\xfe\xfa")
+
+    from apps.evaluations.services import load_experiment_summary
+
+    assert load_experiment_summary(tmp_path) == {"overview": [], "algorithms": []}

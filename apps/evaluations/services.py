@@ -16,5 +16,5 @@ def load_experiment_summary(base_dir: Path):
         return {"overview": [], "algorithms": []}
     try:
         return json.loads(summary_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError):
         return {"overview": [], "algorithms": []}

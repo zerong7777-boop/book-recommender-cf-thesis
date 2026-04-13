@@ -4,6 +4,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.recommendations.models import OfflineJobRun, RecommendationResult
+from pathlib import Path
 
 
 @pytest.mark.django_db
@@ -57,7 +58,7 @@ def test_staff_dashboard_shows_latest_job(client):
 
 
 @pytest.mark.django_db
-def test_staff_can_trigger_rebuild(client, monkeypatch):
+def test_staff_can_trigger_rebuild(client, monkeypatch, settings, tmp_path):
     staff = get_user_model().objects.create_user(
         username="operator",
         email="operator@example.com",
@@ -70,6 +71,7 @@ def test_staff_can_trigger_rebuild(client, monkeypatch):
         called["launched"] = True
 
     monkeypatch.setattr("apps.dashboard.views._launch_rebuild_job", fake_launch)
+    settings.BASE_DIR = tmp_path
 
     client.login(username="operator", password="AdminPass123")
     response = client.post(reverse("dashboard:trigger_rebuild"))
@@ -80,7 +82,7 @@ def test_staff_can_trigger_rebuild(client, monkeypatch):
 
 
 @pytest.mark.django_db
-def test_trigger_rebuild_skips_launch_when_lock_exists(client, monkeypatch):
+def test_trigger_rebuild_skips_launch_when_lock_exists(client, monkeypatch, settings, tmp_path):
     staff = get_user_model().objects.create_user(
         username="locked",
         email="locked@example.com",
@@ -93,9 +95,10 @@ def test_trigger_rebuild_skips_launch_when_lock_exists(client, monkeypatch):
         called["launched"] = True
 
     monkeypatch.setattr("apps.dashboard.views._launch_rebuild_job", fake_launch)
-    from django.core.cache import cache
-
-    cache.set("dashboard:rebuild-lock", "1", timeout=60)
+    settings.BASE_DIR = tmp_path
+    runtime_dir = Path(tmp_path) / ".runtime"
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+    (runtime_dir / "dashboard_rebuild.lock").write_text("locked", encoding="utf-8")
     client.login(username="locked", password="AdminPass123")
     response = client.post(reverse("dashboard:trigger_rebuild"))
 

@@ -53,6 +53,13 @@ def _compute_item_similarity(matrix: pd.DataFrame | None) -> pd.DataFrame | None
     return pd.DataFrame(similarity, index=matrix.columns, columns=matrix.columns)
 
 
+def _compute_user_similarity(matrix: pd.DataFrame | None) -> pd.DataFrame | None:
+    if matrix is None or matrix.empty:
+        return None
+    similarity = cosine_similarity(matrix)
+    return pd.DataFrame(similarity, index=matrix.index, columns=matrix.index)
+
+
 def _itemcf_recommendations_from_similarity(
     subject_key: str,
     matrix: pd.DataFrame | None,
@@ -81,6 +88,92 @@ def _itemcf_recommendations_from_similarity(
         if len(recommendations) >= top_k:
             break
     return recommendations
+
+
+def _usercf_recommendations_from_similarity(
+    subject_key: str,
+    matrix: pd.DataFrame | None,
+    user_similarity: pd.DataFrame | None,
+    top_k: int,
+) -> List[Tuple[int, float]]:
+    if matrix is None or user_similarity is None:
+        return []
+    if subject_key not in matrix.index:
+        return []
+
+    user_ratings = matrix.loc[subject_key]
+    seen_ids = {int(book_id) for book_id, value in user_ratings.items() if value > 0}
+    neighbors = user_similarity.loc[subject_key].drop(labels=[subject_key], errors="ignore")
+    neighbors = neighbors[neighbors > 0].sort_values(ascending=False)
+    if neighbors.empty:
+        return []
+
+    scores: dict[int, float] = {}
+    for neighbor_key, similarity_score in neighbors.items():
+        neighbor_ratings = matrix.loc[neighbor_key]
+        for book_id, value in neighbor_ratings.items():
+            if value <= 0 or int(book_id) in seen_ids:
+                continue
+            scores[int(book_id)] = (
+                scores.get(int(book_id), 0.0) + float(similarity_score) * float(value)
+            )
+    return sorted(scores.items(), key=lambda item: item[1], reverse=True)[:top_k]
+
+
+def _normalize_scores(recommendations: List[Tuple[int, float]]) -> dict[int, float]:
+    if not recommendations:
+        return {}
+    values = [score for _, score in recommendations]
+    max_score = max(values)
+    min_score = min(values)
+    if max_score == min_score:
+        return {book_id: 1.0 for book_id, _ in recommendations}
+    return {
+        book_id: (score - min_score) / (max_score - min_score)
+        for book_id, score in recommendations
+    }
+
+
+def _hybrid_recommendations(
+    subject_key: str,
+    matrix: pd.DataFrame | None,
+    item_similarity: pd.DataFrame | None,
+    user_similarity: pd.DataFrame | None,
+    hot_books: List[Book],
+    rated_book_ids: Iterable[int],
+    top_k: int,
+) -> List[Tuple[int, float]]:
+    seen_ids = set(rated_book_ids)
+    item_scores = _normalize_scores(
+        _itemcf_recommendations_from_similarity(
+            subject_key,
+            matrix,
+            item_similarity,
+            top_k * 3,
+        )
+    )
+    user_scores = _normalize_scores(
+        _usercf_recommendations_from_similarity(
+            subject_key,
+            matrix,
+            user_similarity,
+            top_k * 3,
+        )
+    )
+    hot_candidates = [
+        (book.id, float(len(hot_books) - idx))
+        for idx, book in enumerate(hot_books)
+        if book.id not in seen_ids
+    ]
+    hot_scores = _normalize_scores(hot_candidates)
+    candidate_ids = list(dict.fromkeys([*item_scores.keys(), *user_scores.keys(), *hot_scores.keys()]))
+    combined = {
+        book_id: item_scores.get(book_id, 0.0) * 0.5
+        + user_scores.get(book_id, 0.0) * 0.3
+        + hot_scores.get(book_id, 0.0) * 0.2
+        for book_id in candidate_ids
+    }
+    return sorted(combined.items(), key=lambda item: item[1], reverse=True)[:top_k]
 
 
 def itemcf_recommendations_for_user(user_id: int, top_k: int = 20) -> List[Tuple[int, float]]:
@@ -136,11 +229,14 @@ def rebuild_recommendations_for_all_users(top_k: int = 20) -> OfflineJobRun:
         frame = _build_interaction_frame()
         matrix = _build_interaction_matrix(frame)
         similarity = _compute_item_similarity(matrix)
+        user_similarity = _compute_user_similarity(matrix)
         hot_books = hot_recommendations(top_k=top_k)
         user_cache_targets = []
+        usercf_users = 0
+        hybrid_users = 0
 
         with transaction.atomic():
-            RecommendationResult.objects.filter(strategy__in=["hot", "itemcf"]).delete()
+            RecommendationResult.objects.filter(strategy__in=["hot", "itemcf", "usercf", "hybrid"]).delete()
             SimilarBookResult.objects.all().delete()
 
             hot_result = RecommendationResult.objects.create(
@@ -201,12 +297,71 @@ def rebuild_recommendations_for_all_users(top_k: int = 20) -> OfflineJobRun:
                 user_cache_targets.append((user_id, result))
                 processed_users += 1
 
+                usercf_recommendations = _usercf_recommendations_from_similarity(
+                    subject_key,
+                    matrix,
+                    user_similarity,
+                    top_k,
+                )
+                if usercf_recommendations:
+                    usercf_result = RecommendationResult.objects.create(
+                        user_id=user_id,
+                        strategy="usercf",
+                        generated_at=timezone.now(),
+                        top_k=top_k,
+                    )
+                    RecommendationItem.objects.bulk_create(
+                        [
+                            RecommendationItem(
+                                result=usercf_result,
+                                book_id=book_id,
+                                rank=rank,
+                                score=score,
+                                reason="Similar readers also liked this",
+                            )
+                            for rank, (book_id, score) in enumerate(usercf_recommendations, start=1)
+                        ]
+                    )
+                    usercf_users += 1
+
+                hybrid_recommendations = _hybrid_recommendations(
+                    subject_key,
+                    matrix,
+                    similarity,
+                    user_similarity,
+                    hot_books,
+                    rated_book_ids,
+                    top_k,
+                )
+                if hybrid_recommendations:
+                    hybrid_result = RecommendationResult.objects.create(
+                        user_id=user_id,
+                        strategy="hybrid",
+                        generated_at=timezone.now(),
+                        top_k=top_k,
+                    )
+                    RecommendationItem.objects.bulk_create(
+                        [
+                            RecommendationItem(
+                                result=hybrid_result,
+                                book_id=book_id,
+                                rank=rank,
+                                score=score,
+                                reason="Blended ItemCF, UserCF, and popularity signal",
+                            )
+                            for rank, (book_id, score) in enumerate(hybrid_recommendations, start=1)
+                        ]
+                    )
+                    hybrid_users += 1
+
         _cache_result(cache_warnings, "hot", cache_hot_recommendations, hot_result)
         for user_id, result in user_cache_targets:
             _cache_result(cache_warnings, f"user:{user_id}", cache_user_recommendations, user_id, result)
 
         job.status = "success"
         summary_parts.append(f"itemcf_users={processed_users}")
+        summary_parts.append(f"usercf_users={usercf_users}")
+        summary_parts.append(f"hybrid_users={hybrid_users}")
         if cache_warnings:
             summary_parts.append(f"cache_warnings={len(cache_warnings)}")
             summary_parts.extend(cache_warnings)

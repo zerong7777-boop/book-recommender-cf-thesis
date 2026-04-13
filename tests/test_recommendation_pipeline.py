@@ -197,3 +197,51 @@ def test_rebuild_uses_imported_interactions_to_strengthen_itemcf():
     assert items
     assert items[0].book_id == books[3].id
     assert items[0].reason == "Similar to your ratings"
+
+
+@pytest.mark.django_db
+def test_rebuild_persists_usercf_and_hybrid_comparison_results_without_changing_cache():
+    cache.clear()
+    category = Category.objects.create(name="Comparison", slug="comparison")
+    books = [
+        create_book(category=category, title="Anchor A", rating_count=5, average_rating=4.0),
+        create_book(category=category, title="Anchor B", rating_count=5, average_rating=4.1),
+        create_book(category=category, title="Anchor C", rating_count=5, average_rating=4.2),
+        create_book(category=category, title="Comparison Candidate", rating_count=2, average_rating=4.9),
+        create_book(category=category, title="Popular Distractor", rating_count=20, average_rating=4.0),
+    ]
+    user = get_user_model().objects.create_user(
+        username="comparison",
+        email="comparison@example.com",
+        password="pass12345",
+    )
+    for score, book in zip([5, 4, 4], books[:3], strict=True):
+        UserRating.objects.create(user=user, book=book, score=score)
+
+    ImportedInteraction.objects.create(dataset_user_id=200, book=books[0], score=5)
+    ImportedInteraction.objects.create(dataset_user_id=200, book=books[3], score=5)
+    ImportedInteraction.objects.create(dataset_user_id=201, book=books[1], score=5)
+    ImportedInteraction.objects.create(dataset_user_id=201, book=books[3], score=4)
+    ImportedInteraction.objects.create(dataset_user_id=202, book=books[2], score=5)
+    ImportedInteraction.objects.create(dataset_user_id=202, book=books[3], score=4)
+
+    rebuild_recommendations_for_all_users(top_k=3)
+    rebuild_recommendations_for_all_users(top_k=3)
+
+    user_results = {
+        result.strategy: result
+        for result in RecommendationResult.objects.filter(user=user).prefetch_related("items")
+    }
+    assert {"itemcf", "usercf", "hybrid"} <= set(user_results)
+    for strategy in ["itemcf", "usercf", "hybrid"]:
+        assert RecommendationResult.objects.filter(user=user, strategy=strategy).count() == 1
+        items = list(user_results[strategy].items.order_by("rank"))
+        assert items
+        assert all(item.book_id not in {book.id for book in books[:3]} for item in items)
+
+    payload = cache.get(user_recommendation_cache_key(user.id))
+    assert payload is not None
+    assert payload["strategy"] == "itemcf"
+    assert {item["book"]["id"] for item in payload["items"]} == {
+        item.book_id for item in user_results["itemcf"].items.all()
+    }

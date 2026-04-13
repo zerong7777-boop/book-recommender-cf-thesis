@@ -14,4 +14,7 @@ def load_experiment_summary(base_dir: Path):
     summary_path = evaluation_artifact_dir(base_dir) / "summary.json"
     if not summary_path.exists():
         return {"overview": [], "algorithms": []}
-    return json.loads(summary_path.read_text(encoding="utf-8"))
+    try:
+        return json.loads(summary_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {"overview": [], "algorithms": []}

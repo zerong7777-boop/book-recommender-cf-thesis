@@ -43,3 +43,13 @@ def test_experiment_results_page_reads_summary(client, settings, tmp_path):
     content = response.content.decode()
     assert "itemcf" in content
     assert "0.1" in content
+
+
+def test_load_experiment_summary_returns_empty_for_malformed_json(tmp_path):
+    artifact_dir = evaluation_artifact_dir(tmp_path)
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    (artifact_dir / "summary.json").write_text("{bad json", encoding="utf-8")
+
+    from apps.evaluations.services import load_experiment_summary
+
+    assert load_experiment_summary(tmp_path) == {"overview": [], "algorithms": []}

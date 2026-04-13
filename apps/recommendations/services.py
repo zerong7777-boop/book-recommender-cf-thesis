@@ -5,6 +5,7 @@ from typing import Iterable, List, Tuple
 import numpy as np
 import pandas as pd
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
 from sklearn.metrics.pairwise import cosine_similarity
@@ -91,9 +92,8 @@ def itemcf_recommendations_for_user(user_id: int, top_k: int = 20) -> List[Tuple
     return _itemcf_recommendations_from_similarity(user_id, matrix, similarity, top_k)
 
 
-def _rebuild_similar_books(similarity: pd.DataFrame, top_k: int) -> int:
-    SimilarBookResult.objects.all().delete()
-    if similarity.empty:
+def _rebuild_similar_books(similarity: pd.DataFrame | None, top_k: int) -> int:
+    if similarity is None or similarity.empty:
         return 0
     results: List[SimilarBookResult] = []
     for source_id in similarity.index:
@@ -120,75 +120,97 @@ def _hot_fallback_books_for_user(rated_book_ids: Iterable[int], top_k: int) -> L
     )
 
 
+def _cache_result(cache_warnings: List[str], label: str, cache_writer, *args) -> None:
+    try:
+        cache_writer(*args)
+    except Exception as exc:  # pragma: no cover - backend-specific in production
+        cache_warnings.append(f"{label}_cache_failed={exc.__class__.__name__}: {exc}")
+
+
 def rebuild_recommendations_for_all_users(top_k: int = 20) -> OfflineJobRun:
     now = timezone.now()
     job = OfflineJobRun.objects.create(job_name="rebuild_recommendations", status="running", started_at=now)
     processed_users = 0
     summary_parts: List[str] = []
+    cache_warnings: List[str] = []
 
     try:
-        hot_books = hot_recommendations(top_k=top_k)
-        hot_result = RecommendationResult.objects.create(
-            user=None,
-            strategy="hot",
-            generated_at=timezone.now(),
-            top_k=top_k,
-        )
-        hot_items = [
-            RecommendationItem(
-                result=hot_result,
-                book=book,
-                rank=rank,
-                score=float(book.rating_count) + float(book.average_rating),
-                reason="Popular with readers",
-            )
-            for rank, book in enumerate(hot_books, start=1)
-        ]
-        if hot_items:
-            RecommendationItem.objects.bulk_create(hot_items)
-        cache_hot_recommendations(hot_result)
-        summary_parts.append(f"hot_items={len(hot_items)}")
-
         frame = _build_interaction_frame()
         matrix = _build_interaction_matrix(frame)
         similarity = _compute_item_similarity(matrix)
-        if similarity is not None:
-            similar_count = _rebuild_similar_books(similarity, top_k=min(top_k, 10))
-            summary_parts.append(f"similar_pairs={similar_count}")
+        hot_books = hot_recommendations(top_k=top_k)
+        user_cache_targets = []
 
-        for user in eligible_users():
-            user_id = int(user.id)
-            rated_book_ids = list(UserRating.objects.filter(user_id=user_id).values_list("book_id", flat=True))
-            recommendations = _itemcf_recommendations_from_similarity(user_id, matrix, similarity, top_k)
-            reason = "Similar to your ratings"
-            if not recommendations:
-                fallback_books = _hot_fallback_books_for_user(rated_book_ids, top_k=top_k)
-                recommendations = [(book.id, float(book.rating_count) + float(book.average_rating)) for book in fallback_books]
-                reason = "Popular fallback because ItemCF had sparse data"
-            if not recommendations:
-                continue
-            result = RecommendationResult.objects.create(
-                user_id=user_id,
-                strategy="itemcf",
+        with transaction.atomic():
+            RecommendationResult.objects.filter(strategy__in=["hot", "itemcf"]).delete()
+            SimilarBookResult.objects.all().delete()
+
+            hot_result = RecommendationResult.objects.create(
+                user=None,
+                strategy="hot",
                 generated_at=timezone.now(),
                 top_k=top_k,
             )
-            items = [
+            hot_items = [
                 RecommendationItem(
-                    result=result,
-                    book_id=book_id,
+                    result=hot_result,
+                    book=book,
                     rank=rank,
-                    score=score,
-                    reason=reason,
+                    score=float(book.rating_count) + float(book.average_rating),
+                    reason="Popular with readers",
                 )
-                for rank, (book_id, score) in enumerate(recommendations, start=1)
+                for rank, book in enumerate(hot_books, start=1)
             ]
-            RecommendationItem.objects.bulk_create(items)
-            cache_user_recommendations(user_id, result)
-            processed_users += 1
+            if hot_items:
+                RecommendationItem.objects.bulk_create(hot_items)
+            summary_parts.append(f"hot_items={len(hot_items)}")
+
+            similar_count = _rebuild_similar_books(similarity, top_k=min(top_k, 10))
+            summary_parts.append(f"similar_pairs={similar_count}")
+
+            for user in eligible_users():
+                user_id = int(user.id)
+                rated_book_ids = list(UserRating.objects.filter(user_id=user_id).values_list("book_id", flat=True))
+                recommendations = _itemcf_recommendations_from_similarity(user_id, matrix, similarity, top_k)
+                reason = "Similar to your ratings"
+                if not recommendations:
+                    fallback_books = _hot_fallback_books_for_user(rated_book_ids, top_k=top_k)
+                    recommendations = [
+                        (book.id, float(book.rating_count) + float(book.average_rating))
+                        for book in fallback_books
+                    ]
+                    reason = "Popular fallback because ItemCF had sparse data"
+                if not recommendations:
+                    continue
+                result = RecommendationResult.objects.create(
+                    user_id=user_id,
+                    strategy="itemcf",
+                    generated_at=timezone.now(),
+                    top_k=top_k,
+                )
+                items = [
+                    RecommendationItem(
+                        result=result,
+                        book_id=book_id,
+                        rank=rank,
+                        score=score,
+                        reason=reason,
+                    )
+                    for rank, (book_id, score) in enumerate(recommendations, start=1)
+                ]
+                RecommendationItem.objects.bulk_create(items)
+                user_cache_targets.append((user_id, result))
+                processed_users += 1
+
+        _cache_result(cache_warnings, "hot", cache_hot_recommendations, hot_result)
+        for user_id, result in user_cache_targets:
+            _cache_result(cache_warnings, f"user:{user_id}", cache_user_recommendations, user_id, result)
 
         job.status = "success"
         summary_parts.append(f"itemcf_users={processed_users}")
+        if cache_warnings:
+            summary_parts.append(f"cache_warnings={len(cache_warnings)}")
+            summary_parts.extend(cache_warnings)
     except Exception as exc:  # pragma: no cover - failure path
         job.status = "failed"
         summary_parts.append(f"error={exc}")

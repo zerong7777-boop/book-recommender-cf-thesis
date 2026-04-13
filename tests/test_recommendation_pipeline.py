@@ -6,7 +6,7 @@ from django.core.management import call_command
 from apps.catalog.models import Book, Category
 from apps.ratings.models import UserRating
 from apps.recommendations.cache import hot_recommendation_cache_key, user_recommendation_cache_key
-from apps.recommendations.models import OfflineJobRun, RecommendationResult
+from apps.recommendations.models import OfflineJobRun, RecommendationResult, SimilarBookResult
 from apps.recommendations.services import rebuild_recommendations_for_all_users
 
 
@@ -111,3 +111,55 @@ def test_management_command_records_success_job():
     assert job.status == "success"
     assert job.job_name == "rebuild_recommendations"
     assert job.summary
+
+
+@pytest.mark.django_db
+def test_rebuild_replaces_prior_results_instead_of_duplicating():
+    cache.clear()
+    category = Category.objects.create(name="Classics", slug="classics")
+    rated_books = [
+        create_book(category=category, title="Rated 1", rating_count=12, average_rating=4.1),
+        create_book(category=category, title="Rated 2", rating_count=11, average_rating=4.0),
+        create_book(category=category, title="Rated 3", rating_count=10, average_rating=3.9),
+    ]
+    create_book(category=category, title="Candidate", rating_count=30, average_rating=4.9)
+    user = get_user_model().objects.create_user(username="repeat", email="repeat@example.com", password="pass12345")
+    for book in rated_books:
+        UserRating.objects.create(user=user, book=book, score=4)
+
+    rebuild_recommendations_for_all_users(top_k=3)
+    rebuild_recommendations_for_all_users(top_k=3)
+
+    assert RecommendationResult.objects.filter(user__isnull=True, strategy="hot").count() == 1
+    assert RecommendationResult.objects.filter(user=user, strategy="itemcf").count() == 1
+
+
+@pytest.mark.django_db
+def test_rebuild_clears_stale_similar_books_when_no_similarity_can_be_computed():
+    cache.clear()
+    category = Category.objects.create(name="Poetry", slug="poetry")
+    source = create_book(category=category, title="Source", rating_count=1, average_rating=3.0)
+    target = create_book(category=category, title="Target", rating_count=1, average_rating=3.0)
+    SimilarBookResult.objects.create(source_book=source, target_book=target, score=0.8, rank=1)
+
+    rebuild_recommendations_for_all_users(top_k=3)
+
+    assert not SimilarBookResult.objects.exists()
+
+
+@pytest.mark.django_db
+def test_rebuild_succeeds_with_cache_warning_when_cache_backend_fails(monkeypatch):
+    cache.clear()
+    category = Category.objects.create(name="Essays", slug="essays")
+    create_book(category=category, title="Cached Later", rating_count=8, average_rating=4.3)
+
+    def fail_cache_set(*args, **kwargs):
+        raise ConnectionError("cache offline")
+
+    monkeypatch.setattr("apps.recommendations.cache.cache.set", fail_cache_set)
+
+    job = rebuild_recommendations_for_all_users(top_k=1)
+
+    assert job.status == "success"
+    assert "cache_warnings" in job.summary
+    assert RecommendationResult.objects.filter(user__isnull=True, strategy="hot").exists()

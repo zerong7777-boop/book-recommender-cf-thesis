@@ -26,6 +26,8 @@ def _empty_summary() -> dict:
         "algorithms": [],
         "curves": {"precision": [], "recall": []},
         "case_studies": [],
+        "similarity_comparison": {},
+        "random_split": {"train_interaction_count": 0, "test_interaction_count": 0, "algorithms": []},
     }
 
 
@@ -66,6 +68,40 @@ def _split_train_holdout(frame: pd.DataFrame):
     return pd.concat(train_parts, ignore_index=True), holdouts, subject_labels
 
 
+def _split_random_interactions(frame: pd.DataFrame, test_fraction: float = 0.2):
+    if frame.empty or len(frame.index) < 2:
+        empty = pd.DataFrame(columns=["subject_key", "book_id", "score", "source"])
+        return empty, {}, {}
+
+    eligible_groups = [
+        group
+        for _, group in frame.groupby("subject_key", sort=True)
+        if len(group.index) >= 2
+    ]
+    if not eligible_groups:
+        return frame[["subject_key", "book_id", "score", "source"]].copy(), {}, {}
+
+    eligible = pd.concat(eligible_groups)
+    test_count = max(1, int(round(len(eligible.index) * test_fraction)))
+    test_rows = (
+        eligible.sample(n=min(test_count, len(eligible.index)), random_state=42)
+        .sort_values(["subject_key", "event_at", "event_id"])
+        .drop_duplicates(subset=["subject_key"], keep="first")
+    )
+    train_frame = frame.drop(index=test_rows.index)[["subject_key", "book_id", "score", "source"]].reset_index(
+        drop=True
+    )
+    holdouts = {
+        str(row["subject_key"]): int(row["book_id"])
+        for _, row in test_rows.iterrows()
+    }
+    subject_labels = {
+        str(row["subject_key"]): str(row["subject_label"])
+        for _, row in test_rows.iterrows()
+    }
+    return train_frame, holdouts, subject_labels
+
+
 def _interaction_matrix(frame: pd.DataFrame) -> pd.DataFrame | None:
     if frame.empty:
         return None
@@ -93,6 +129,17 @@ def _item_similarity(matrix: pd.DataFrame | None) -> pd.DataFrame | None:
     if matrix is None or matrix.empty:
         return None
     similarity = cosine_similarity(matrix.T)
+    return pd.DataFrame(similarity, index=matrix.columns, columns=matrix.columns)
+
+
+def _pearson_item_similarity(matrix: pd.DataFrame | None) -> pd.DataFrame | None:
+    if matrix is None or matrix.empty:
+        return None
+    values = matrix.T.astype(float).to_numpy()
+    with np.errstate(divide="ignore", invalid="ignore"):
+        similarity = np.atleast_2d(np.corrcoef(values))
+    similarity = np.nan_to_num(similarity, nan=0.0, posinf=0.0, neginf=0.0)
+    np.fill_diagonal(similarity, 1.0)
     return pd.DataFrame(similarity, index=matrix.columns, columns=matrix.columns)
 
 
@@ -161,6 +208,16 @@ def _hot_predictions(train_frame: pd.DataFrame, holdouts: dict[str, int], limit:
 def _itemcf_predictions(train_frame: pd.DataFrame, holdouts: dict[str, int], limit: int) -> dict[str, list[int]]:
     matrix = _interaction_matrix(train_frame)
     similarity = _item_similarity(matrix)
+    return _itemcf_predictions_with_similarity(train_frame, holdouts, limit, matrix, similarity)
+
+
+def _itemcf_predictions_with_similarity(
+    train_frame: pd.DataFrame,
+    holdouts: dict[str, int],
+    limit: int,
+    matrix: pd.DataFrame | None,
+    similarity: pd.DataFrame | None,
+) -> dict[str, list[int]]:
     popularity = _sorted_popularity(train_frame)
     predictions = {}
     for subject_key in holdouts:
@@ -324,6 +381,74 @@ def _build_case_studies(
     return case_studies
 
 
+def _build_similarity_comparison(
+    train_frame: pd.DataFrame,
+    holdouts: dict[str, int],
+) -> dict[str, dict[str, object]]:
+    if not holdouts:
+        return {}
+    matrix = _interaction_matrix(train_frame)
+    comparison = {}
+    similarities = {
+        "cosine": _item_similarity(matrix),
+        "pearson": _pearson_item_similarity(matrix),
+    }
+    for name, similarity in similarities.items():
+        predictions = _itemcf_predictions_with_similarity(
+            train_frame,
+            holdouts,
+            max(k_values()),
+            matrix,
+            similarity,
+        )
+        metric_rows = _metric_rows(predictions, holdouts)
+        best_row = _best_metric_row(metric_rows)
+        comparison[name] = {
+            "name": name,
+            "best_precision": best_row["precision"],
+            "best_recall": best_row["recall"],
+            "best_k": best_row["k"],
+            "user_count": len(holdouts),
+            "metrics": metric_rows,
+        }
+    return comparison
+
+
+def _build_random_split_summary(frame: pd.DataFrame) -> dict[str, object]:
+    train_frame, holdouts, _subject_labels = _split_random_interactions(frame)
+    if not holdouts:
+        return {
+            "train_interaction_count": int(len(train_frame.index)),
+            "test_interaction_count": 0,
+            "algorithms": [],
+        }
+
+    algorithms = {
+        "hot": _hot_predictions(train_frame, holdouts, max(k_values())),
+        "itemcf": _itemcf_predictions(train_frame, holdouts, max(k_values())),
+        "usercf": _usercf_predictions(train_frame, holdouts, max(k_values())),
+        "hybrid": _hybrid_predictions(train_frame, holdouts, max(k_values())),
+    }
+    algorithm_rows = []
+    for name, predictions in algorithms.items():
+        metric_rows = _metric_rows(predictions, holdouts)
+        best_row = _best_metric_row(metric_rows)
+        algorithm_rows.append(
+            {
+                "name": name,
+                "precision": best_row["precision"],
+                "recall": best_row["recall"],
+                "best_k": best_row["k"],
+                "test_subject_count": len(holdouts),
+            }
+        )
+    return {
+        "train_interaction_count": int(len(train_frame.index)),
+        "test_interaction_count": int(len(holdouts)),
+        "algorithms": algorithm_rows,
+    }
+
+
 def record_evaluation_runs(summary: dict, experiment_name: str = "leave-one-out-offline") -> list[EvaluationRun]:
     started_at = timezone.now()
     finished_at = timezone.now()
@@ -407,6 +532,8 @@ def generate_evaluation_summary() -> dict:
     imported_rows = frame.loc[frame["source"] != "site"] if not frame.empty else frame
     curves = _build_curves(per_algorithm_rows)
     case_studies = _build_case_studies(algorithms, holdouts, subject_labels)
+    similarity_comparison = _build_similarity_comparison(train_frame, holdouts)
+    random_split = _build_random_split_summary(frame)
     return {
         "metadata": {
             "dataset_name": "site-ratings+goodbooks-10k",
@@ -420,4 +547,6 @@ def generate_evaluation_summary() -> dict:
         "algorithms": algorithm_payload,
         "curves": curves,
         "case_studies": case_studies,
+        "similarity_comparison": similarity_comparison,
+        "random_split": random_split,
     }

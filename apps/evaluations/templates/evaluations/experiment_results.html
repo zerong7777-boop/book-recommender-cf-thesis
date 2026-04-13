@@ -141,7 +141,7 @@
     {% endif %}
   </section>
 
-  <section class="content-panel">
+  <section class="content-panel mb-4">
     <div class="section-header-row">
       <div>
         <p class="section-kicker">Case studies</p>
@@ -169,6 +169,83 @@
       </div>
     {% else %}
       <p class="empty-state mb-0">Case studies will appear once the evaluator has holdout subjects to score.</p>
+    {% endif %}
+  </section>
+
+  <section class="content-panel mb-4">
+    <div class="section-header-row">
+      <div>
+        <p class="section-kicker">Similarity</p>
+        <h2 class="section-title h1 mb-0">Similarity comparison</h2>
+      </div>
+    </div>
+    {% if summary.similarity_comparison %}
+      <div class="row g-3">
+        {% for name, row in summary.similarity_comparison.items %}
+          <div class="col-md-6">
+            <article class="metric-card h-100">
+              <p class="small-label mb-1">ItemCF similarity</p>
+              <p class="metric-card-value">{{ row.name }}</p>
+              <ul class="status-list mb-0">
+                <li class="status-pill">Best precision {{ row.best_precision }}</li>
+                <li class="status-pill">Best recall {{ row.best_recall }}</li>
+                <li class="status-pill">Best K {{ row.best_k }}</li>
+              </ul>
+            </article>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty-state mb-0">Cosine and Pearson comparison runs after the offline evaluator has holdout subjects.</p>
+    {% endif %}
+  </section>
+
+  <section class="content-panel mb-4">
+    <div class="section-header-row">
+      <div>
+        <p class="section-kicker">Random split</p>
+        <h2 class="section-title h1 mb-0">Random interaction split</h2>
+      </div>
+    </div>
+    <div class="row g-3 mb-4">
+      <div class="col-md-6">
+        <article class="metric-card h-100">
+          <p class="small-label mb-1">Train interactions</p>
+          <p class="metric-card-value">{{ summary.random_split.train_interaction_count|default:0 }}</p>
+        </article>
+      </div>
+      <div class="col-md-6">
+        <article class="metric-card h-100">
+          <p class="small-label mb-1">Test interactions</p>
+          <p class="metric-card-value">{{ summary.random_split.test_interaction_count|default:0 }}</p>
+        </article>
+      </div>
+    </div>
+    {% if summary.random_split.algorithms %}
+      <div class="table-shell table-responsive">
+        <table class="table align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Algorithm</th>
+              <th>Precision</th>
+              <th>Recall</th>
+              <th>Best K</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for algorithm in summary.random_split.algorithms %}
+              <tr>
+                <td>{{ algorithm.name }}</td>
+                <td>{{ algorithm.precision }}</td>
+                <td>{{ algorithm.recall }}</td>
+                <td>{{ algorithm.best_k }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="empty-state mb-0">Random split metrics require at least one subject with two interactions.</p>
     {% endif %}
   </section>
 

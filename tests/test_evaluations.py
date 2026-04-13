@@ -119,6 +119,10 @@ def test_evaluate_recommenders_uses_imported_interactions_and_persists_runs(sett
     assert payload["metadata"]["dataset_user_count"] == 4
     assert payload["curves"]["precision"]
     assert payload["case_studies"]
+    assert payload["similarity_comparison"]["cosine"]["name"] == "cosine"
+    assert payload["similarity_comparison"]["pearson"]["name"] == "pearson"
+    assert payload["random_split"]["test_interaction_count"] > 0
+    assert payload["random_split"]["algorithms"]
     assert EvaluationRun.objects.count() == 4
     assert {
         run.strategy for run in EvaluationRun.objects.all()
@@ -162,6 +166,15 @@ def test_experiment_results_page_reads_summary(client, settings):
                         "metrics": [{"k": 5, "precision": 0.1, "recall": 0.2}],
                     }
                 ],
+                "similarity_comparison": {
+                    "cosine": {"name": "cosine", "best_precision": 0.1, "best_recall": 0.2, "best_k": 5},
+                    "pearson": {"name": "pearson", "best_precision": 0.08, "best_recall": 0.16, "best_k": 5},
+                },
+                "random_split": {
+                    "train_interaction_count": 8,
+                    "test_interaction_count": 2,
+                    "algorithms": [{"name": "itemcf", "precision": 0.1, "recall": 0.2, "best_k": 5}],
+                },
             },
             ensure_ascii=False,
             indent=2,
@@ -180,6 +193,9 @@ def test_experiment_results_page_reads_summary(client, settings):
     assert "Best precision" in content
     assert "Precision curves" in content
     assert "Case studies" in content
+    assert "Similarity comparison" in content
+    assert "Random interaction split" in content
+    assert "pearson" in content
 
 
 def test_load_experiment_summary_returns_empty_for_malformed_json():
@@ -196,6 +212,8 @@ def test_load_experiment_summary_returns_empty_for_malformed_json():
         "algorithms": [],
         "curves": {"precision": [], "recall": []},
         "case_studies": [],
+        "similarity_comparison": {},
+        "random_split": {"train_interaction_count": 0, "test_interaction_count": 0, "algorithms": []},
     }
 
 
@@ -213,4 +231,6 @@ def test_load_experiment_summary_returns_empty_for_invalid_utf8():
         "algorithms": [],
         "curves": {"precision": [], "recall": []},
         "case_studies": [],
+        "similarity_comparison": {},
+        "random_split": {"train_interaction_count": 0, "test_interaction_count": 0, "algorithms": []},
     }

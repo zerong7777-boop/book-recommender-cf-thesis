@@ -43,6 +43,7 @@ conda run -n bookrec311 python manage.py migrate --settings=book_recommender.set
 ```powershell
 conda run -n bookrec311 python scripts/init_demo_data.py
 conda run -n bookrec311 python manage.py evaluate_recommenders --settings=book_recommender.settings_mysql_demo
+conda run -n bookrec311 python manage.py shell --settings=book_recommender.settings_mysql_demo -c "from apps.ratings.models import ImportedInteraction; print(ImportedInteraction.objects.count())"
 ```
 
 执行完成后，会创建：
@@ -56,6 +57,14 @@ conda run -n bookrec311 python manage.py evaluate_recommenders --settings=book_r
 - `demo_reader` 的 3 条评分
 - 一轮离线推荐结果
 - 一份实验页读取的评估结果
+
+如果最后一条命令输出 `0`，说明当前 demo 数据库只使用本地 seed 评分，还没有实际导入 Goodbooks 公开交互数据。要展示公开数据路径，先把 `books.csv` 和 `ratings.csv` 放到 `data/raw/goodbooks/`，再执行：
+
+```powershell
+conda run -n bookrec311 python manage.py import_goodbooks --source data/raw/goodbooks --limit-ratings 5000 --settings=book_recommender.settings_mysql_demo
+conda run -n bookrec311 python manage.py rebuild_recommendations --settings=book_recommender.settings_mysql_demo
+conda run -n bookrec311 python manage.py evaluate_recommenders --settings=book_recommender.settings_mysql_demo
+```
 
 ### 5. 启动服务
 

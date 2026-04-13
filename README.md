@@ -42,7 +42,15 @@ Run migrations after MySQL is available:
 conda run -n bookrec311 python manage.py migrate
 ```
 
-If you already have a Goodbooks import or another local catalog load step, run that first. This repository does not ship a dedicated Goodbooks import command. For a self-contained smoke/demo setup, the demo initializer below seeds a compact sample catalog automatically.
+This repository ships a Goodbooks-style import command. Place `books.csv` and `ratings.csv` under `data/raw/goodbooks/`, then run:
+
+```powershell
+conda run -n bookrec311 python manage.py import_goodbooks --source data/raw/goodbooks --limit-ratings 5000
+conda run -n bookrec311 python manage.py rebuild_recommendations
+conda run -n bookrec311 python manage.py evaluate_recommenders
+```
+
+For a full import, omit `--limit-ratings`. Dataset users are stored as `ImportedInteraction`; they are not login accounts. For a self-contained smoke/demo setup without public data files, the demo initializer below seeds a compact sample catalog automatically.
 
 ## Demo data
 

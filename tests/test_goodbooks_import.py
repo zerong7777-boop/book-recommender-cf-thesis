@@ -79,3 +79,62 @@ user_id,book_id,rating
 
     assert Book.objects.filter(title="Repeatable Import").count() == 1
     assert ImportedInteraction.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_import_goodbooks_reports_created_and_updated_counts(capsys):
+    tmp_path = make_temp_dir("goodbooks-summary-")
+    source_dir = tmp_path / "goodbooks"
+    source_dir.mkdir(parents=True, exist_ok=True)
+    _write_csv(
+        source_dir / "books.csv",
+        """
+book_id,title,authors,original_publication_year,average_rating,ratings_count,image_url
+1,Counted Import,A. Curator,2021,4.5,20,https://example.com/1.jpg
+        """,
+    )
+    _write_csv(
+        source_dir / "ratings.csv",
+        """
+user_id,book_id,rating
+10,1,5
+        """,
+    )
+
+    call_command("import_goodbooks", source=str(source_dir))
+    call_command("import_goodbooks", source=str(source_dir))
+
+    output = capsys.readouterr().out
+    assert "books_processed=1" in output
+    assert "books_created=0" in output
+    assert "books_updated=1" in output
+    assert "interactions_created=0" in output
+    assert "interactions_updated=1" in output
+
+
+@pytest.mark.django_db
+def test_import_goodbooks_can_limit_ratings_for_local_smoke_import():
+    tmp_path = make_temp_dir("goodbooks-limit-")
+    source_dir = tmp_path / "goodbooks"
+    source_dir.mkdir(parents=True, exist_ok=True)
+    _write_csv(
+        source_dir / "books.csv",
+        """
+book_id,title,authors,original_publication_year,average_rating,ratings_count,image_url
+1,Limited Import A,A. Curator,2021,4.5,20,https://example.com/1.jpg
+2,Limited Import B,B. Curator,2020,4.0,10,https://example.com/2.jpg
+        """,
+    )
+    _write_csv(
+        source_dir / "ratings.csv",
+        """
+user_id,book_id,rating
+10,1,5
+10,2,4
+11,1,3
+        """,
+    )
+
+    call_command("import_goodbooks", source=str(source_dir), limit_ratings=2)
+
+    assert ImportedInteraction.objects.count() == 2

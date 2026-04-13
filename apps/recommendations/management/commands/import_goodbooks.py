@@ -35,6 +35,12 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--source", required=True, help="Directory containing books.csv and ratings.csv")
+        parser.add_argument(
+            "--limit-ratings",
+            type=int,
+            default=None,
+            help="Optional maximum number of ratings rows to import for local smoke runs.",
+        )
 
     def handle(self, *args, **options):
         source_dir = Path(options["source"]).resolve()
@@ -57,8 +63,12 @@ class Command(BaseCommand):
             defaults={"name": DEFAULT_CATEGORY_NAME},
         )
         book_map: dict[int, Book] = {}
-        imported_books = 0
-        imported_ratings = 0
+        books_processed = 0
+        books_created = 0
+        books_updated = 0
+        interactions_created = 0
+        interactions_updated = 0
+        limit_ratings = options["limit_ratings"]
 
         with transaction.atomic():
             for row in books_frame.to_dict("records"):
@@ -66,6 +76,7 @@ class Command(BaseCommand):
                 author = str(row.get("authors", "")).strip() or "Unknown Author"
                 if not title:
                     continue
+                books_processed += 1
                 book, created = Book.objects.update_or_create(
                     title=title,
                     author=author,
@@ -81,23 +92,36 @@ class Command(BaseCommand):
                 )
                 book_map[int(row["book_id"])] = book
                 if created:
-                    imported_books += 1
+                    books_created += 1
+                else:
+                    books_updated += 1
 
-            for row in ratings_frame.to_dict("records"):
+            rating_rows = ratings_frame.to_dict("records")
+            if limit_ratings is not None:
+                rating_rows = rating_rows[: max(limit_ratings, 0)]
+            for row in rating_rows:
                 score = _clean_score(row.get("rating"))
                 book = book_map.get(int(row.get("book_id")))
                 if book is None or score is None:
                     continue
-                ImportedInteraction.objects.update_or_create(
+                _, created = ImportedInteraction.objects.update_or_create(
                     dataset_name="goodbooks-10k",
                     dataset_user_id=int(row["user_id"]),
                     book=book,
                     defaults={"score": score},
                 )
-                imported_ratings += 1
+                if created:
+                    interactions_created += 1
+                else:
+                    interactions_updated += 1
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Imported goodbooks data: books_created={imported_books}, interactions_processed={imported_ratings}"
+                "Imported goodbooks data: "
+                f"books_processed={books_processed}, "
+                f"books_created={books_created}, "
+                f"books_updated={books_updated}, "
+                f"interactions_created={interactions_created}, "
+                f"interactions_updated={interactions_updated}"
             )
         )

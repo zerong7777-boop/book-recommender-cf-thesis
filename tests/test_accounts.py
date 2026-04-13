@@ -27,3 +27,14 @@ def test_user_can_login(client, django_user_model):
     })
     assert response.status_code == 302
     assert client.get(reverse("accounts:profile")).status_code == 200
+
+
+@pytest.mark.django_db
+def test_profile_links_to_first_rating_flow(client, django_user_model):
+    django_user_model.objects.create_user(username="reader3", email="reader3@example.com", password="ReaderPass123")
+    client.login(username="reader3", password="ReaderPass123")
+
+    response = client.get(reverse("accounts:profile"))
+
+    assert response.status_code == 200
+    assert reverse("ratings:first-rate") in response.content.decode()

@@ -7,6 +7,9 @@
   <p>Recommendation state: {{ recommendation_state }}</p>
 
   <h2>Your ratings</h2>
+  <p>
+    <a class="btn btn-primary" href="{% url 'ratings:first-rate' %}">Rate your first book</a>
+  </p>
   {% if ratings %}
     <ul class="list-group">
       {% for rating in ratings %}

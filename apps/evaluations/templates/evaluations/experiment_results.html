@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Experiment Results | Book Recommender{% endblock %}
+
+{% block content %}
+  <section class="mb-4">
+    <h1 class="mb-3">Offline Evaluation Results</h1>
+    <p class="text-muted">Precision/Recall and K-value analysis are read from offline-generated artifacts.</p>
+  </section>
+
+  <section class="mb-4">
+    <h2 class="h4">Overview</h2>
+    {% if summary.overview %}
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>K</th>
+              <th>Precision</th>
+              <th>Recall</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in summary.overview %}
+              <tr>
+                <td>{{ row.k }}</td>
+                <td>{{ row.precision }}</td>
+                <td>{{ row.recall }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-muted">No evaluation artifact has been generated yet.</p>
+    {% endif %}
+  </section>
+
+  <section>
+    <h2 class="h4">Algorithms</h2>
+    {% if summary.algorithms %}
+      <div class="row g-3">
+        {% for algorithm in summary.algorithms %}
+          <div class="col-md-6">
+            <article class="card h-100">
+              <div class="card-body">
+                <h3 class="h5 card-title">{{ algorithm.name }}</h3>
+                <p class="card-text text-muted mb-0">{{ algorithm.summary }}</p>
+              </div>
+            </article>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted">Algorithm summaries will appear after offline evaluation runs.</p>
+    {% endif %}
+  </section>
+{% endblock %}

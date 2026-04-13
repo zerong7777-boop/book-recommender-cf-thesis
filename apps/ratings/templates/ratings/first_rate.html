@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Start rating | Book Recommender{% endblock %}
+
+{% block content %}
+  <h1>Start rating books</h1>
+  <p>Your ratings help personalize recommendations.</p>
+  <p>
+    <a class="btn btn-primary" href="{% url 'catalog:book_list' %}">Browse books</a>
+    <a class="btn btn-outline-secondary" href="{% url 'accounts:profile' %}">Go to profile</a>
+  </p>
+{% endblock %}

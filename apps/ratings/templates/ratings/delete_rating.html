@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Delete rating | Book Recommender{% endblock %}
+
+{% block content %}
+  <h1>Delete rating for {{ book.title }}</h1>
+  <form method="post" class="mt-3">
+    {% csrf_token %}
+    <p>Are you sure you want to remove this rating?</p>
+    <button type="submit" class="btn btn-danger">Delete rating</button>
+  </form>
+{% endblock %}

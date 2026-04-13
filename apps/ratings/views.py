@@ -10,7 +10,8 @@ from .services import delete_rating, upsert_rating
 
 @login_required
 def first_rate_view(request):
-    return render(request, "ratings/first_rate.html", {"rating_form": RatingForm()})
+    books = Book.objects.order_by("-rating_count", "-average_rating")[:12]
+    return render(request, "ratings/first_rate.html", {"rating_form": RatingForm(), "books": books})
 
 
 @login_required
@@ -20,7 +21,7 @@ def rate_book_view(request, pk):
         form = RatingForm(request.POST)
         if form.is_valid():
             upsert_rating(user=request.user, book=book, score=form.cleaned_data["score"])
-            return redirect(reverse("accounts:profile"))
+            return redirect(reverse("catalog:book_detail", kwargs={"pk": book.pk}))
     else:
         form = RatingForm()
     return render(request, "ratings/rate_book.html", {"book": book, "form": form})

@@ -9,4 +9,35 @@
     <a class="btn btn-primary" href="{% url 'catalog:book_list' %}">Browse books</a>
     <a class="btn btn-outline-secondary" href="{% url 'accounts:profile' %}">Go to profile</a>
   </p>
+
+  <section class="mt-4">
+    <h2 class="h4">Popular books to rate first</h2>
+    {% if books %}
+      <div class="row g-3">
+        {% for book in books %}
+          <div class="col-md-4">
+            <article class="card h-100">
+              <div class="card-body">
+                <h3 class="h5 card-title">
+                  <a href="{% url 'catalog:book_detail' book.pk %}">{{ book.title }}</a>
+                </h3>
+                <p class="card-text text-muted">{{ book.author }}</p>
+                <p class="card-text small">Rating {{ book.average_rating }} / 5 from {{ book.rating_count }} readers</p>
+                <form method="post" action="{% url 'ratings:rate-book' book.pk %}" class="d-flex gap-2 align-items-end">
+                  {% csrf_token %}
+                  <div>
+                    <label class="form-label small" for="score-{{ book.pk }}">Your score</label>
+                    <input id="score-{{ book.pk }}" class="form-control form-control-sm" type="number" name="score" min="1" max="5" value="5">
+                  </div>
+                  <button class="btn btn-sm btn-primary" type="submit">Save</button>
+                </form>
+              </div>
+            </article>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted">No books are available for first ratings yet.</p>
+    {% endif %}
+  </section>
 {% endblock %}

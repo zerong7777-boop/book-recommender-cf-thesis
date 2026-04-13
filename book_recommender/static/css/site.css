@@ -440,6 +440,39 @@ img {
   color: var(--text-muted);
 }
 
+.curve-card {
+  padding: 1.25rem;
+  border: 1px solid rgba(33, 32, 28, 0.1);
+  border-radius: 8px;
+  background: #fffdf9;
+}
+
+.curve-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.curve-axis {
+  stroke: rgba(33, 32, 28, 0.2);
+  stroke-width: 1;
+}
+
+.curve-line {
+  fill: none;
+  stroke: #9e2f22;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.curve-points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 @media (max-width: 991.98px) {
   .site-actions {
     margin-top: 1rem;

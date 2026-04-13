@@ -1,12 +1,25 @@
 import json
+from pathlib import Path
+from uuid import uuid4
 
 import pytest
 from django.core.management import call_command
 from django.urls import reverse
 
 from apps.catalog.models import Book, Category
+from apps.evaluations.models import EvaluationRun
 from apps.evaluations.services import evaluation_artifact_dir, k_values
-from apps.ratings.models import UserRating
+from apps.ratings.models import ImportedInteraction, UserRating
+
+
+TMP_ROOT = Path(__file__).resolve().parents[1] / ".tmp_testdata"
+
+
+def make_temp_dir(prefix: str) -> Path:
+    TMP_ROOT.mkdir(parents=True, exist_ok=True)
+    path = TMP_ROOT / f"{prefix}{uuid4().hex}"
+    path.mkdir(parents=True, exist_ok=False)
+    return path
 
 
 def test_k_values_match_spec():
@@ -14,7 +27,8 @@ def test_k_values_match_spec():
 
 
 @pytest.mark.django_db
-def test_evaluate_recommenders_writes_summary(settings, tmp_path):
+def test_evaluate_recommenders_writes_summary(settings):
+    tmp_path = make_temp_dir("eval-summary-")
     settings.BASE_DIR = tmp_path
 
     call_command("evaluate_recommenders")
@@ -27,7 +41,8 @@ def test_evaluate_recommenders_writes_summary(settings, tmp_path):
 
 
 @pytest.mark.django_db
-def test_evaluate_recommenders_computes_non_placeholder_metrics(settings, tmp_path, django_user_model):
+def test_evaluate_recommenders_computes_non_placeholder_metrics(settings, django_user_model):
+    tmp_path = make_temp_dir("eval-metrics-")
     settings.BASE_DIR = tmp_path
     category = Category.objects.create(name="Eval", slug="eval")
     books = [
@@ -65,7 +80,53 @@ def test_evaluate_recommenders_computes_non_placeholder_metrics(settings, tmp_pa
     assert len(algorithm_payload["itemcf"]["metrics"]) == 4
 
 
-def test_experiment_results_page_reads_summary(client, settings, tmp_path):
+@pytest.mark.django_db
+def test_evaluate_recommenders_uses_imported_interactions_and_persists_runs(settings):
+    tmp_path = make_temp_dir("eval-imported-")
+    settings.BASE_DIR = tmp_path
+    category = Category.objects.create(name="Imported Eval", slug="imported-eval")
+    books = [
+        Book.objects.create(
+            title=f"Imported Book {idx}",
+            author="Author",
+            category=category,
+            description="desc",
+            publisher="pub",
+            publication_year=2024,
+            average_rating=4.0 + (idx * 0.1),
+            rating_count=10 + idx,
+        )
+        for idx in range(1, 6)
+    ]
+    interaction_specs = [
+        (200, [books[0], books[1], books[2]]),
+        (201, [books[0], books[1], books[3]]),
+        (202, [books[0], books[1], books[4]]),
+        (203, [books[0], books[2], books[3]]),
+    ]
+    for dataset_user_id, rated_books in interaction_specs:
+        for score, book in enumerate(rated_books, start=3):
+            ImportedInteraction.objects.create(
+                dataset_user_id=dataset_user_id,
+                book=book,
+                score=min(score, 5),
+            )
+
+    call_command("evaluate_recommenders")
+
+    payload = json.loads((evaluation_artifact_dir(tmp_path) / "summary.json").read_text(encoding="utf-8"))
+    assert any(row["precision"] > 0 for row in payload["overview"])
+    assert payload["metadata"]["dataset_user_count"] == 4
+    assert payload["curves"]["precision"]
+    assert payload["case_studies"]
+    assert EvaluationRun.objects.count() == 4
+    assert {
+        run.strategy for run in EvaluationRun.objects.all()
+    } == {"hot", "itemcf", "usercf", "hybrid"}
+
+
+def test_experiment_results_page_reads_summary(client, settings):
+    tmp_path = make_temp_dir("eval-view-")
     settings.BASE_DIR = tmp_path
     artifact_dir = evaluation_artifact_dir(tmp_path)
     artifact_dir.mkdir(parents=True, exist_ok=True)
@@ -73,6 +134,23 @@ def test_experiment_results_page_reads_summary(client, settings, tmp_path):
         json.dumps(
             {
                 "overview": [{"k": 5, "precision": 0.1, "recall": 0.2}],
+                "metadata": {"dataset_user_count": 4, "site_user_count": 1, "run_count": 4},
+                "curves": {
+                    "precision": [
+                        {"name": "itemcf", "points": [{"k": 5, "value": 0.1}]},
+                    ],
+                    "recall": [
+                        {"name": "itemcf", "points": [{"k": 5, "value": 0.2}]},
+                    ],
+                },
+                "case_studies": [
+                    {
+                        "subject": "dataset:100",
+                        "holdout_book": "Book 1",
+                        "best_strategy": "itemcf",
+                        "top_recommendations": ["Book 2", "Book 3"],
+                    }
+                ],
                 "algorithms": [
                     {
                         "name": "itemcf",
@@ -100,23 +178,39 @@ def test_experiment_results_page_reads_summary(client, settings, tmp_path):
     assert "Offline evaluation lab" in content
     assert "K-value checkpoints" in content
     assert "Best precision" in content
+    assert "Precision curves" in content
+    assert "Case studies" in content
 
 
-def test_load_experiment_summary_returns_empty_for_malformed_json(tmp_path):
+def test_load_experiment_summary_returns_empty_for_malformed_json():
+    tmp_path = make_temp_dir("eval-badjson-")
     artifact_dir = evaluation_artifact_dir(tmp_path)
     artifact_dir.mkdir(parents=True, exist_ok=True)
     (artifact_dir / "summary.json").write_text("{bad json", encoding="utf-8")
 
     from apps.evaluations.services import load_experiment_summary
 
-    assert load_experiment_summary(tmp_path) == {"overview": [], "algorithms": []}
+    assert load_experiment_summary(tmp_path) == {
+        "metadata": {},
+        "overview": [],
+        "algorithms": [],
+        "curves": {"precision": [], "recall": []},
+        "case_studies": [],
+    }
 
 
-def test_load_experiment_summary_returns_empty_for_invalid_utf8(tmp_path):
+def test_load_experiment_summary_returns_empty_for_invalid_utf8():
+    tmp_path = make_temp_dir("eval-badutf8-")
     artifact_dir = evaluation_artifact_dir(tmp_path)
     artifact_dir.mkdir(parents=True, exist_ok=True)
     (artifact_dir / "summary.json").write_bytes(b"\xff\xfe\xfa")
 
     from apps.evaluations.services import load_experiment_summary
 
-    assert load_experiment_summary(tmp_path) == {"overview": [], "algorithms": []}
+    assert load_experiment_summary(tmp_path) == {
+        "metadata": {},
+        "overview": [],
+        "algorithms": [],
+        "curves": {"precision": [], "recall": []},
+        "case_studies": [],
+    }

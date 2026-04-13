@@ -13,5 +13,9 @@ htmlcov/
 *.egg-info/
 .worktrees/
 .runtime/
+.pytest_tmp/
+.tmp_testdata/
 artifacts/evaluations/summary.json
-local-demo.sqlite3
+local-demo*.sqlite3
+local-demo.sqlite3.corrupt-*
+*.sqlite3-journal

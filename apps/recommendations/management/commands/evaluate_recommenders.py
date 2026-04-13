@@ -3,7 +3,11 @@ import json
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from apps.evaluations.services import evaluation_artifact_dir, generate_evaluation_summary
+from apps.evaluations.services import (
+    evaluation_artifact_dir,
+    generate_evaluation_summary,
+    record_evaluation_runs,
+)
 
 
 class Command(BaseCommand):
@@ -13,6 +17,7 @@ class Command(BaseCommand):
         artifact_dir = evaluation_artifact_dir(settings.BASE_DIR)
         artifact_dir.mkdir(parents=True, exist_ok=True)
         summary = generate_evaluation_summary()
+        record_evaluation_runs(summary)
         (artifact_dir / "summary.json").write_text(
             json.dumps(summary, ensure_ascii=False, indent=2),
             encoding="utf-8",

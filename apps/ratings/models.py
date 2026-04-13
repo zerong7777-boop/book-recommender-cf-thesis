@@ -35,3 +35,23 @@ class UserRatingHistory(models.Model):
                 name="user_rating_history_score_1_5",
             ),
         ]
+
+
+class ImportedInteraction(models.Model):
+    dataset_name = models.CharField(max_length=100, default="goodbooks-10k")
+    dataset_user_id = models.PositiveIntegerField()
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="imported_interactions")
+    score = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    imported_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["dataset_name", "dataset_user_id", "book"],
+                name="unique_imported_interaction_dataset_user_book",
+            ),
+            models.CheckConstraint(
+                condition=Q(score__gte=1) & Q(score__lte=5),
+                name="imported_interaction_score_1_5",
+            ),
+        ]

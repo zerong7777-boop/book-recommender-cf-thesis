@@ -4,7 +4,7 @@ from django.core.cache import cache
 from django.core.management import call_command
 
 from apps.catalog.models import Book, Category
-from apps.ratings.models import UserRating
+from apps.ratings.models import ImportedInteraction, UserRating
 from apps.recommendations.cache import hot_recommendation_cache_key, user_recommendation_cache_key
 from apps.recommendations.models import OfflineJobRun, RecommendationResult, SimilarBookResult
 from apps.recommendations.services import rebuild_recommendations_for_all_users
@@ -163,3 +163,37 @@ def test_rebuild_succeeds_with_cache_warning_when_cache_backend_fails(monkeypatc
     assert job.status == "success"
     assert "cache_warnings" in job.summary
     assert RecommendationResult.objects.filter(user__isnull=True, strategy="hot").exists()
+
+
+@pytest.mark.django_db
+def test_rebuild_uses_imported_interactions_to_strengthen_itemcf():
+    cache.clear()
+    category = Category.objects.create(name="Imported", slug="imported")
+    books = [
+        create_book(category=category, title="Anchor A", rating_count=5, average_rating=4.0),
+        create_book(category=category, title="Anchor B", rating_count=5, average_rating=4.1),
+        create_book(category=category, title="Anchor C", rating_count=5, average_rating=4.2),
+        create_book(category=category, title="Imported Candidate", rating_count=2, average_rating=4.9),
+    ]
+    user = get_user_model().objects.create_user(
+        username="withimport",
+        email="withimport@example.com",
+        password="pass12345",
+    )
+    for score, book in zip([5, 4, 4], books[:3], strict=True):
+        UserRating.objects.create(user=user, book=book, score=score)
+
+    ImportedInteraction.objects.create(dataset_user_id=100, book=books[0], score=5)
+    ImportedInteraction.objects.create(dataset_user_id=100, book=books[3], score=5)
+    ImportedInteraction.objects.create(dataset_user_id=101, book=books[1], score=5)
+    ImportedInteraction.objects.create(dataset_user_id=101, book=books[3], score=4)
+    ImportedInteraction.objects.create(dataset_user_id=102, book=books[2], score=5)
+    ImportedInteraction.objects.create(dataset_user_id=102, book=books[3], score=4)
+
+    rebuild_recommendations_for_all_users(top_k=3)
+
+    result = RecommendationResult.objects.get(user=user, strategy="itemcf")
+    items = list(result.items.select_related("book").order_by("rank"))
+    assert items
+    assert items[0].book_id == books[3].id
+    assert items[0].reason == "Similar to your ratings"

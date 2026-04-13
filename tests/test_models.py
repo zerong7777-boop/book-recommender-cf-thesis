@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 
 from apps.catalog.models import Book, Category
-from apps.ratings.models import UserRating, UserRatingHistory
+from apps.ratings.models import ImportedInteraction, UserRating, UserRatingHistory
 from apps.recommendations.models import RecommendationItem, RecommendationResult, SimilarBookResult
 
 
@@ -100,3 +100,13 @@ def test_similar_book_result_unique_constraints_prevent_duplicate_rank_and_targe
         SimilarBookResult.objects.create(source_book=source_book, target_book=second_target, score=0.8, rank=1)
     with pytest.raises(IntegrityError):
         SimilarBookResult.objects.create(source_book=source_book, target_book=first_target, score=0.7, rank=2)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_imported_interaction_is_unique_for_dataset_user_and_book():
+    book = create_book(name="Imported", slug="imported")
+
+    ImportedInteraction.objects.create(dataset_user_id=101, book=book, score=4)
+
+    with pytest.raises(IntegrityError):
+        ImportedInteraction.objects.create(dataset_user_id=101, book=book, score=5)

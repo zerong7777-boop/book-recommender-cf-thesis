@@ -12,6 +12,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from apps.catalog.models import Book
 from apps.ratings.models import UserRating
+from apps.ratings.services import build_interaction_frame, site_subject_key
 from apps.recommendations.cache import cache_hot_recommendations, cache_user_recommendations
 from apps.recommendations.models import (
     OfflineJobRun,
@@ -36,16 +37,13 @@ def eligible_users():
 
 
 def _build_interaction_frame() -> pd.DataFrame:
-    ratings = list(UserRating.objects.values("user_id", "book_id", "score"))
-    if not ratings:
-        return pd.DataFrame(columns=["user_id", "book_id", "score"])
-    return pd.DataFrame.from_records(ratings)
+    return build_interaction_frame()
 
 
 def _build_interaction_matrix(frame: pd.DataFrame) -> pd.DataFrame | None:
     if frame.empty:
         return None
-    return frame.pivot_table(index="user_id", columns="book_id", values="score", fill_value=0)
+    return frame.pivot_table(index="subject_key", columns="book_id", values="score", fill_value=0)
 
 
 def _compute_item_similarity(matrix: pd.DataFrame | None) -> pd.DataFrame | None:
@@ -56,16 +54,16 @@ def _compute_item_similarity(matrix: pd.DataFrame | None) -> pd.DataFrame | None
 
 
 def _itemcf_recommendations_from_similarity(
-    user_id: int,
+    subject_key: str,
     matrix: pd.DataFrame | None,
     similarity: pd.DataFrame | None,
     top_k: int,
 ) -> List[Tuple[int, float]]:
     if matrix is None or similarity is None:
         return []
-    if user_id not in matrix.index:
+    if subject_key not in matrix.index:
         return []
-    user_ratings = matrix.loc[user_id]
+    user_ratings = matrix.loc[subject_key]
     rated_mask = user_ratings.values > 0
     if rated_mask.sum() == 0:
         return []
@@ -89,7 +87,7 @@ def itemcf_recommendations_for_user(user_id: int, top_k: int = 20) -> List[Tuple
     frame = _build_interaction_frame()
     matrix = _build_interaction_matrix(frame)
     similarity = _compute_item_similarity(matrix)
-    return _itemcf_recommendations_from_similarity(user_id, matrix, similarity, top_k)
+    return _itemcf_recommendations_from_similarity(site_subject_key(user_id), matrix, similarity, top_k)
 
 
 def _rebuild_similar_books(similarity: pd.DataFrame | None, top_k: int) -> int:
@@ -170,8 +168,9 @@ def rebuild_recommendations_for_all_users(top_k: int = 20) -> OfflineJobRun:
 
             for user in eligible_users():
                 user_id = int(user.id)
+                subject_key = site_subject_key(user_id)
                 rated_book_ids = list(UserRating.objects.filter(user_id=user_id).values_list("book_id", flat=True))
-                recommendations = _itemcf_recommendations_from_similarity(user_id, matrix, similarity, top_k)
+                recommendations = _itemcf_recommendations_from_similarity(subject_key, matrix, similarity, top_k)
                 reason = "Similar to your ratings"
                 if not recommendations:
                     fallback_books = _hot_fallback_books_for_user(rated_book_ids, top_k=top_k)

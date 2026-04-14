@@ -128,8 +128,17 @@ Stop-Process -Id 31972 -Force
 6. 点击 `Trigger rebuild`
 7. 刷新 dashboard，确认页面仍能正常打开
 8. 记住：dashboard 按钮是手动触发路径；每日自动 rebuild 路径由 `scripts/register_daily_rebuild_task.ps1` 注册
-9. 点击 `Open Django Admin`
-10. 确认 `http://127.0.0.1:8000/admin/` 可以访问
+9. 每日自动 rebuild 已注册为 Windows 计划任务。查询命令：
+
+```powershell
+Get-ScheduledTask -TaskName BookRecommenderDailyRebuild | Select-Object TaskName,State
+Get-ScheduledTaskInfo -TaskName BookRecommenderDailyRebuild | Select-Object LastRunTime,LastTaskResult,NextRunTime
+```
+
+最近一次手动触发验证结果：`LastTaskResult = 0`，表示计划任务执行成功。任务读取当前项目根目录下被 Git 忽略的 `.env` 中的 MySQL/Redis 配置。
+
+10. 点击 `Open Django Admin`
+11. 确认 `http://127.0.0.1:8000/admin/` 可以访问
 
 ## 方式 B：正式方式
 

@@ -30,6 +30,18 @@ def _clean_score(value):
     return score if 1 <= score <= 5 else None
 
 
+def _clean_text(value, *, fallback="", max_length=None):
+    if pd.isna(value):
+        text = ""
+    else:
+        text = str(value).strip()
+    if not text:
+        text = fallback
+    if max_length is not None:
+        text = text[:max_length]
+    return text
+
+
 class Command(BaseCommand):
     help = "Import Goodbooks-style books and ratings CSV files"
 
@@ -69,11 +81,12 @@ class Command(BaseCommand):
         interactions_created = 0
         interactions_updated = 0
         limit_ratings = options["limit_ratings"]
+        author_max_length = Book._meta.get_field("author").max_length
 
         with transaction.atomic():
             for row in books_frame.to_dict("records"):
                 title = str(row.get("title", "")).strip()
-                author = str(row.get("authors", "")).strip() or "Unknown Author"
+                author = _clean_text(row.get("authors"), fallback="Unknown Author", max_length=author_max_length)
                 if not title:
                     continue
                 books_processed += 1

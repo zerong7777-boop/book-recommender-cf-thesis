@@ -55,6 +55,34 @@ user_id,book_id,rating
 
 
 @pytest.mark.django_db
+def test_import_goodbooks_truncates_long_author_values():
+    tmp_path = make_temp_dir("goodbooks-long-author-")
+    source_dir = tmp_path / "goodbooks"
+    source_dir.mkdir(parents=True, exist_ok=True)
+    long_author = "A" * 300
+    _write_csv(
+        source_dir / "books.csv",
+        f"""
+book_id,title,authors,original_publication_year,average_rating,ratings_count,image_url
+1,Long Author Import,{long_author},2021,4.5,20,https://example.com/1.jpg
+        """,
+    )
+    _write_csv(
+        source_dir / "ratings.csv",
+        """
+user_id,book_id,rating
+10,1,5
+        """,
+    )
+
+    call_command("import_goodbooks", source=str(source_dir))
+
+    book = Book.objects.get(title="Long Author Import")
+    assert len(book.author) <= Book._meta.get_field("author").max_length
+    assert ImportedInteraction.objects.count() == 1
+
+
+@pytest.mark.django_db
 def test_import_goodbooks_is_idempotent_for_books_and_interactions():
     tmp_path = make_temp_dir("goodbooks-idempotent-")
     source_dir = tmp_path / "goodbooks"

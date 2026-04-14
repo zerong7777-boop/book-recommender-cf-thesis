@@ -15,6 +15,8 @@ $action = New-ScheduledTaskAction `
   -WorkingDirectory $ProjectRoot
 
 $trigger = New-ScheduledTaskTrigger -Daily -At $DailyAt
+# Interactive keeps the local demo least-privilege and avoids storing a Windows password.
+# The task runs when the current Windows user is signed in.
 $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited
 
 Register-ScheduledTask `

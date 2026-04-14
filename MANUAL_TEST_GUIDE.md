@@ -135,7 +135,7 @@ Get-ScheduledTask -TaskName BookRecommenderDailyRebuild | Select-Object TaskName
 Get-ScheduledTaskInfo -TaskName BookRecommenderDailyRebuild | Select-Object LastRunTime,LastTaskResult,NextRunTime
 ```
 
-最近一次手动触发验证结果：`LastTaskResult = 0`，表示计划任务执行成功。任务读取当前项目根目录下被 Git 忽略的 `.env` 中的 MySQL/Redis 配置。
+最近一次手动触发验证结果：`LastTaskResult = 0`，表示手动触发路径执行成功。这个计划任务使用当前 Windows 交互账号注册，适合本机答辩演示；要让它按 02:00 自动运行，需要该 Windows 用户保持登录。任务读取当前项目根目录下被 Git 忽略的 `.env` 中的 MySQL/Redis 配置。
 
 10. 点击 `Open Django Admin`
 11. 确认 `http://127.0.0.1:8000/admin/` 可以访问

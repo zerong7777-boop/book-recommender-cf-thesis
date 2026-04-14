@@ -81,11 +81,17 @@ conda run -n bookrec311 python manage.py runserver 127.0.0.1:8000 --settings=boo
 当前已启动的服务：
 
 - 地址：`http://127.0.0.1:8000/`
-- 监听 PID：`23864`
+- 监听 PID：`31972`
+- 重新查询 PID：
+
+```powershell
+netstat -ano | Select-String ':8000'
+```
+
 - 停止命令：
 
 ```powershell
-Stop-Process -Id 19504,23528,34472,23864 -Force
+Stop-Process -Id 31972 -Force
 ```
 
 ## 现在你应该怎么点

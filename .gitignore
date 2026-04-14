@@ -19,3 +19,4 @@ artifacts/evaluations/summary.json
 local-demo*.sqlite3
 local-demo.sqlite3.corrupt-*
 *.sqlite3-journal
+data/raw/goodbooks/*.csv

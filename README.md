@@ -113,6 +113,14 @@ redis_cache_path_ok hot_result_id=1 processed_users=1
 
 The `book_recommender.settings_mysql_demo` setting uses locmem cache only for local click-through demos and does not prove the Redis-backed read path.
 
+Latest local formal-path status:
+
+```text
+redis_unverified: no Redis server was listening at redis://127.0.0.1:6379/1 during the latest local check.
+```
+
+Start Redis first, then rerun `scripts/verify_redis_cache_path.py` to turn this into a positive `redis_cache_path_ok ...` proof.
+
 ## Evaluation
 
 Generate the thesis evaluation artifact summary:
@@ -152,9 +160,9 @@ This refresh is intentionally template-first. The collaborative-filtering pipeli
 
 ## Spec alignment status
 
-The code supports Goodbooks-style public-data import through `import_goodbooks`, offline `ItemCF` recommendation generation, `UserCF` and hybrid evaluation comparisons, Precision/Recall curves for K=5/10/20/30, Redis-backed reads under the formal settings, and a `MySQL + locmem` demo fallback for machines without Redis.
+The local MySQL demo has imported a bounded Goodbooks-10k slice (`ImportedInteraction.objects.count() == 5000`) and generated `hot`, `ItemCF`, `UserCF`, and lightweight hybrid recommendation outputs. The code supports Redis-backed reads under the formal settings, while `book_recommender.settings_mysql_demo` remains available as a click-through fallback for machines without Redis.
 
-The demo database only proves the public-data path after `ImportedInteraction.objects.count()` is nonzero. Public dataset CSV files are local inputs under `data/raw/goodbooks/`; if `books.csv` and `ratings.csv` are absent, treat that as a data-environment gap rather than a code-path gap.
+The downloaded Goodbooks CSV files are local inputs under `data/raw/goodbooks/` and are intentionally ignored by Git. The latest local Redis proof is still pending because no Redis service was available on `127.0.0.1:6379`.
 
 ## Demo flow
 

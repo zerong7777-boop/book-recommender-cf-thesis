@@ -58,15 +58,22 @@ conda run -n bookrec311 python manage.py shell --settings=book_recommender.setti
 - 一轮离线推荐结果
 - 一份实验页读取的评估结果
 
-如果最后一条命令输出 `0`，说明当前 demo 数据库只使用本地 seed 评分，还没有实际导入 Goodbooks 公开交互数据。要展示公开数据路径，先把 `books.csv` 和 `ratings.csv` 放到 `data/raw/goodbooks/`，再执行：
+当前 MySQL demo 已导入 Goodbooks 公开交互数据。最近一次验证结果：
+
+```text
+imported_interactions 5000
+goodbooks_books 10000
+strategies ['hot', 'hybrid', 'itemcf', 'usercf']
+```
+
+如果你清空数据库或删除 `data/raw/goodbooks/` 后重建环境，重新执行下载、导入、rebuild 和 evaluate 命令：
 
 ```powershell
+conda run -n bookrec311 python scripts/download_goodbooks_data.py --destination data/raw/goodbooks
 conda run -n bookrec311 python manage.py import_goodbooks --source data/raw/goodbooks --limit-ratings 5000 --settings=book_recommender.settings_mysql_demo
 conda run -n bookrec311 python manage.py rebuild_recommendations --settings=book_recommender.settings_mysql_demo
 conda run -n bookrec311 python manage.py evaluate_recommenders --settings=book_recommender.settings_mysql_demo
 ```
-
-如果 `data/raw/goodbooks/books.csv` 或 `data/raw/goodbooks/ratings.csv` 不存在，当前 demo 只能证明导入命令、seed 数据、推荐重建和评估页面路径可用，不能证明已经接入真实公开交互数据。
 
 ### 5. 启动服务
 

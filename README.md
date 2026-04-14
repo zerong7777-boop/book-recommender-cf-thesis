@@ -150,6 +150,12 @@ The current thesis demo UI keeps the existing Django backend and adapts two matu
 
 This refresh is intentionally template-first. The collaborative-filtering pipeline, account flow, and dashboard actions still use the original Django views and services.
 
+## Spec alignment status
+
+The code supports Goodbooks-style public-data import through `import_goodbooks`, offline `ItemCF` recommendation generation, `UserCF` and hybrid evaluation comparisons, Precision/Recall curves for K=5/10/20/30, Redis-backed reads under the formal settings, and a `MySQL + locmem` demo fallback for machines without Redis.
+
+The demo database only proves the public-data path after `ImportedInteraction.objects.count()` is nonzero. Public dataset CSV files are local inputs under `data/raw/goodbooks/`; if `books.csv` and `ratings.csv` are absent, treat that as a data-environment gap rather than a code-path gap.
+
 ## Demo flow
 
 1. Open the site in the browser.

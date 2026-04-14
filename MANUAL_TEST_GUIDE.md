@@ -66,6 +66,8 @@ conda run -n bookrec311 python manage.py rebuild_recommendations --settings=book
 conda run -n bookrec311 python manage.py evaluate_recommenders --settings=book_recommender.settings_mysql_demo
 ```
 
+如果 `data/raw/goodbooks/books.csv` 或 `data/raw/goodbooks/ratings.csv` 不存在，当前 demo 只能证明导入命令、seed 数据、推荐重建和评估页面路径可用，不能证明已经接入真实公开交互数据。
+
 ### 5. 启动服务
 
 ```powershell
@@ -101,7 +103,7 @@ Stop-Process -Id 19504,23528,34472,23864 -Force
 9. 在个人中心点击 `Recommendation center`
 10. 确认推荐页能看到推荐书目和推荐理由，例如 `Similar to your ratings` 或 `Popular fallback because ItemCF had sparse data`
 11. 打开 `http://127.0.0.1:8000/experiments/`
-12. 确认实验页能看到：`K-value checkpoints`、`Precision curves`、`Recall curves`、`Case studies`
+12. 确认实验页能看到：`K-value checkpoints`、`Precision curves`、`Recall curves`、`Case studies`、`Similarity comparison`、`Random interaction split`
 
 ### 再测管理员路径
 

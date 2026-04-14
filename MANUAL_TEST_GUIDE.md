@@ -112,8 +112,9 @@ Stop-Process -Id 19504,23528,34472,23864 -Force
 5. 确认页面能看到：最新离线任务、Processed users、`Trigger rebuild`
 6. 点击 `Trigger rebuild`
 7. 刷新 dashboard，确认页面仍能正常打开
-8. 点击 `Open Django Admin`
-9. 确认 `http://127.0.0.1:8000/admin/` 可以访问
+8. 记住：dashboard 按钮是手动触发路径；每日自动 rebuild 路径由 `scripts/register_daily_rebuild_task.ps1` 注册
+9. 点击 `Open Django Admin`
+10. 确认 `http://127.0.0.1:8000/admin/` 可以访问
 
 ## 方式 B：正式方式
 

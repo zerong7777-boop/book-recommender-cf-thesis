@@ -81,6 +81,22 @@ Rebuild collaborative-filtering and hot-start recommendation data:
 conda run -n bookrec311 python manage.py rebuild_recommendations
 ```
 
+## Daily scheduled rebuild
+
+For the formal Windows local demo, register a daily Task Scheduler job:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/register_daily_rebuild_task.ps1 -SettingsModule book_recommender.settings -DailyAt 02:00
+```
+
+For the MySQL demo fallback without Redis:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/register_daily_rebuild_task.ps1 -SettingsModule book_recommender.settings_mysql_demo -DailyAt 02:00
+```
+
+The scheduled task runs the same Django management command used by the dashboard manual trigger.
+
 ## Redis-backed read verification
 
 The formal spec path uses `book_recommender.settings`, which reads Redis from `REDIS_URL`. Start Redis, then run:

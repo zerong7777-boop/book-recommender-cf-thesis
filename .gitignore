@@ -16,6 +16,7 @@ htmlcov/
 .pytest_tmp/
 .tmp_testdata/
 artifacts/evaluations/summary.json
+staticfiles/
 local-demo*.sqlite3
 local-demo.sqlite3.corrupt-*
 *.sqlite3-journal

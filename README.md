@@ -1,48 +1,108 @@
-# book-recommender-cf
+# 图书推荐系统 | Django Collaborative Filtering Demo
 
-Django thesis project for a local book recommender demo.
+一个可直接在线展示的图书推荐系统。项目围绕论文/答辩场景设计，包含图书浏览、用户评分、个性化推荐、离线评估实验页和管理员运维入口。
 
-## Prerequisites
+线上演示地址：
 
-1. Python environment: `bookrec311`
-2. Database: MySQL 8.x or compatible
-3. Cache: Redis 6.x or compatible
+https://web-production-7e7f.up.railway.app
 
-## Environment setup
+演示账号：
 
-1. Copy `.env.example` to `.env` in the project root.
-2. Set the MySQL and Redis values for your local machine.
-3. Keep `DJANGO_DEBUG=True` for local development unless you are explicitly testing production-style settings.
+| 角色 | 用户名 | 密码 | 用途 |
+| --- | --- | --- | --- |
+| 普通读者 | `demo_reader` | `DemoPass123!` | 浏览图书、评分、查看推荐结果 |
+| 管理员 | `thesis_admin` | `AdminPass123!` | 查看管理页、触发推荐刷新、进入 Django Admin |
 
-Example `.env` values:
+## 页面预览
 
-```env
-DJANGO_SECRET_KEY=replace-me
-DJANGO_DEBUG=True
-DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost
-MYSQL_DATABASE=book_recommender_cf
-MYSQL_USER=root
-MYSQL_PASSWORD=replace-me
-MYSQL_HOST=127.0.0.1
-MYSQL_PORT=3306
-REDIS_URL=redis://127.0.0.1:6379/1
-```
+### 首页
 
-## Install dependencies
+首页提供图书入口、实验结果入口和演示导览，适合给客户或答辩老师快速说明系统范围。
+
+![首页截图](docs/assets/readme/home.png)
+
+### 登录页
+
+系统支持普通用户和管理员两类演示路径，登录页直接说明推荐、评分和后台验证流程。
+
+![登录页截图](docs/assets/readme/login.png)
+
+### 图书列表页
+
+图书列表页展示公开数据导入后的图书集合，便于说明系统不是空壳演示站。
+
+![图书列表页截图](docs/assets/readme/catalog.png)
+
+### 实验结果页
+
+实验页展示离线评估结果，包括 K 值检查点、精确率曲线、召回率曲线、相似度对比和随机交互划分。
+
+![实验结果页截图](docs/assets/readme/experiments.png)
+
+## 核心能力
+
+- 图书浏览：支持首页推荐、图书列表、分类入口和图书详情页。
+- 用户评分：普通用户可以对图书打分，评分会进入推荐链路。
+- 推荐中心：展示推荐书单、推荐分数和推荐理由。
+- 真实数据接入：支持 Goodbooks-10k 风格公开数据导入，当前演示版本使用了有界样本。
+- 离线评估：生成 `summary.json` 实验产物，并在网页中展示 precision、recall、K 值和算法对比。
+- 管理后台：管理员可以查看离线任务状态，并手动触发推荐刷新。
+- Railway 部署：客户只需要访问公网 URL，不需要配置 Python、MySQL 或 Redis。
+
+## 技术栈
+
+| 层级 | 技术 |
+| --- | --- |
+| Web 框架 | Django 5 |
+| 数据库 | MySQL，演示模式可使用 SQLite |
+| 缓存 | Redis，演示模式可使用本地内存缓存 |
+| 推荐算法 | 热门推荐、ItemCF、UserCF、轻量混合策略 |
+| 评估 | Precision、Recall、K 值检查点、随机交互划分 |
+| 部署 | Railway + Gunicorn + WhiteNoise |
+
+## 推荐演示流程
+
+1. 打开线上首页：`https://web-production-7e7f.up.railway.app`
+2. 使用 `demo_reader` / `DemoPass123!` 登录。
+3. 打开个人中心，查看评分记录和推荐状态。
+4. 打开推荐中心，查看推荐书目、推荐分数和推荐理由。
+5. 打开实验结果页，展示离线评估指标。
+6. 退出后切换到 `thesis_admin` / `AdminPass123!`。
+7. 打开管理面板，查看最近离线任务并手动触发刷新。
+
+更详细的线上点击说明见：
+
+[ONLINE_DEMO_GUIDE.md](ONLINE_DEMO_GUIDE.md)
+
+本地手动测试说明见：
+
+[MANUAL_TEST_GUIDE.md](MANUAL_TEST_GUIDE.md)
+
+## 本地运行
+
+### 1. 准备环境
 
 ```powershell
 conda run -n bookrec311 python -m pip install -r requirements.txt
 ```
 
-## Database setup
+复制环境变量模板：
 
-Run migrations after MySQL is available:
+```powershell
+Copy-Item .env.example .env
+```
+
+根据本机情况填写 MySQL 和 Redis 参数。
+
+### 2. 初始化数据库
 
 ```powershell
 conda run -n bookrec311 python manage.py migrate
 ```
 
-This repository ships a Goodbooks-style import command. Place `books.csv` and `ratings.csv` under `data/raw/goodbooks/`, then run:
+### 3. 导入公开数据并生成推荐
+
+把 `books.csv` 和 `ratings.csv` 放到 `data/raw/goodbooks/` 后运行：
 
 ```powershell
 conda run -n bookrec311 python manage.py import_goodbooks --source data/raw/goodbooks --limit-ratings 5000
@@ -50,134 +110,81 @@ conda run -n bookrec311 python manage.py rebuild_recommendations
 conda run -n bookrec311 python manage.py evaluate_recommenders
 ```
 
-For a full import, omit `--limit-ratings`. Dataset users are stored as `ImportedInteraction`; they are not login accounts. For a self-contained smoke/demo setup without public data files, the demo initializer below seeds a compact sample catalog automatically.
-
-## Demo data
-
-Seed the thesis demo account, staff admin account, sample catalog, ratings, and recommendation cache:
+如果没有公开数据文件，也可以初始化一套轻量演示数据：
 
 ```powershell
 conda run -n bookrec311 python scripts/init_demo_data.py
 ```
 
-The initializer creates:
-
-1. Staff admin: `thesis_admin` / `AdminPass123!`
-2. Demo reader: `demo_reader` / `DemoPass123!`
-3. At least 3 ratings for the demo reader
-4. A compact sample catalog suitable for smoke validation
-
-If you already loaded a catalog and only want the accounts plus ratings, run:
-
-```powershell
-conda run -n bookrec311 python scripts/init_demo_data.py --no-sample-catalog
-```
-
-## Recommendation rebuild
-
-Rebuild collaborative-filtering and hot-start recommendation data:
-
-```powershell
-conda run -n bookrec311 python manage.py rebuild_recommendations
-```
-
-## Daily scheduled rebuild
-
-For the formal Windows local demo, register a daily Task Scheduler job:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/register_daily_rebuild_task.ps1 -SettingsModule book_recommender.settings -DailyAt 02:00
-```
-
-For the MySQL demo fallback without Redis:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/register_daily_rebuild_task.ps1 -SettingsModule book_recommender.settings_mysql_demo -DailyAt 02:00
-```
-
-The scheduled task runs the same Django management command used by the dashboard manual trigger.
-
-## Redis-backed read verification
-
-The formal spec path uses `book_recommender.settings`, which reads Redis from `REDIS_URL`. Start Redis, then run:
-
-```powershell
-conda run -n bookrec311 python scripts/verify_redis_cache_path.py
-```
-
-Expected output:
-
-```text
-redis_cache_path_ok hot_result_id=1 processed_users=1
-```
-
-The `book_recommender.settings_mysql_demo` setting uses locmem cache only for local click-through demos and does not prove the Redis-backed read path.
-
-Latest local formal-path status:
-
-```text
-redis_unverified: no Redis server was listening at redis://127.0.0.1:6379/1 during the latest local check.
-```
-
-Start Redis first, then rerun `scripts/verify_redis_cache_path.py` to turn this into a positive `redis_cache_path_ok ...` proof.
-
-## Evaluation
-
-Generate the thesis evaluation artifact summary:
-
-```powershell
-conda run -n bookrec311 python manage.py evaluate_recommenders
-```
-
-## Start the app
+### 4. 启动服务
 
 ```powershell
 conda run -n bookrec311 python manage.py runserver
 ```
 
-## Quick local demo mode
+浏览器打开：
 
-If you only want to click through the app locally without preparing `.env`, MySQL credentials, and Redis first, use the SQLite + locmem demo mode:
+http://127.0.0.1:8000/
+
+## 演示模式
+
+如果只想本机点一遍功能，可以使用 MySQL 演示配置，缓存走本地内存，不依赖 Redis：
 
 ```powershell
-conda run -n bookrec311 python manage.py migrate --settings=book_recommender.settings_local_demo
-$env:DJANGO_SETTINGS_MODULE='book_recommender.settings_local_demo'
+conda run -n bookrec311 python manage.py migrate --settings=book_recommender.settings_mysql_demo
+$env:DJANGO_SETTINGS_MODULE='book_recommender.settings_mysql_demo'
 conda run -n bookrec311 python scripts/init_demo_data.py
+conda run -n bookrec311 python manage.py evaluate_recommenders --settings=book_recommender.settings_mysql_demo
 Remove-Item Env:DJANGO_SETTINGS_MODULE
-conda run -n bookrec311 python manage.py runserver 127.0.0.1:8000 --settings=book_recommender.settings_local_demo
+conda run -n bookrec311 python manage.py runserver 127.0.0.1:8000 --settings=book_recommender.settings_mysql_demo
 ```
 
-Detailed click-by-click manual test instructions live in [MANUAL_TEST_GUIDE.md](E:/projects/book-recommender-cf/MANUAL_TEST_GUIDE.md).
+## 运维和部署说明
 
-## UI base
+Railway Web 服务启动时会自动执行：
 
-The current thesis demo UI keeps the existing Django backend and adapts two mature open-source layout directions for the visible product layer:
+```bash
+python manage.py collectstatic --noinput
+python manage.py evaluate_recommenders --skip-record
+gunicorn book_recommender.wsgi:application --bind 0.0.0.0:$PORT
+```
 
-1. A `Booksaw`-inspired bookstore storefront for homepage, catalog, recommendations, and account pages
-2. A `Tabler`-style operations layout for the staff dashboard
+这样每次部署后都会刷新实验页需要的 `artifacts/evaluations/summary.json`，不会因为容器重建而出现空实验页。
 
-This refresh is intentionally template-first. The collaborative-filtering pipeline, account flow, and dashboard actions still use the original Django views and services.
-
-## Spec alignment status
-
-The local MySQL demo has imported a bounded Goodbooks-10k slice (`ImportedInteraction.objects.count() == 5000`) and generated `hot`, `ItemCF`, `UserCF`, and lightweight hybrid recommendation outputs. The code supports Redis-backed reads under the formal settings, while `book_recommender.settings_mysql_demo` remains available as a click-through fallback for machines without Redis.
-
-The downloaded Goodbooks CSV files are local inputs under `data/raw/goodbooks/` and are intentionally ignored by Git. The latest local Redis proof is still pending because no Redis service was available on `127.0.0.1:6379`.
-
-## 演示流程
-
-1. 在浏览器里打开站点首页。
-2. 用演示读者账号 `demo_reader` / `DemoPass123!` 登录，或者直接说“使用 demo_reader 演示账号登录”。
-3. 打开个人中心，查看已写入的评分和推荐状态。
-4. 打开推荐中心，查看当前推荐结果和推荐理由。
-5. 退出后切换到 `thesis_admin` / `AdminPass123!`。
-6. 打开管理页，查看最近的离线任务并手动触发重建。
-
-## Verification
-
-Before wrapping up a local change, run:
+## 验证命令
 
 ```powershell
 conda run -n bookrec311 python manage.py check
 conda run -n bookrec311 pytest tests/test_end_to_end_smoke.py -q
+conda run -n bookrec311 pytest tests/test_evaluations.py tests/test_railway_settings.py -q
 ```
+
+最近一次关键验证：
+
+- 中文化核心验收：`61 passed`
+- 评估产物部署修复测试：`11 passed`
+- Railway 线上实验页：已显示非空 K 值、precision、recall 和随机划分指标
+
+## 项目结构
+
+```text
+apps/
+  accounts/          登录、注册、个人中心
+  catalog/           首页、图书列表、详情页、分类页
+  ratings/           用户评分流程
+  recommendations/   推荐生成、缓存和管理命令
+  evaluations/       离线评估、实验结果页
+  dashboard/         管理员运维面板
+book_recommender/    Django 项目配置、基础模板、静态资源
+docs/assets/readme/  README 页面截图
+scripts/             初始化、下载、验证和计划任务脚本
+tests/               单元测试、端到端 smoke、部署配置测试
+```
+
+## 当前状态
+
+- 线上版本已部署到 Railway。
+- 页面已切换为中文界面。
+- Goodbooks 风格公开交互数据已接入演示环境。
+- 实验页已从占位数据改为真实评估指标输出。
+- 推荐解释已出现在推荐中心、详情页和个人中心相关路径中。

@@ -1,24 +1,30 @@
 ﻿# 手动测试傻瓜文档（MySQL 演示版）
 
+这份文档先写启动命令，再写页面怎么点、看到什么。页面名称统一按当前中文 UI 写，必要时保留英文对照。
+
+## 一、本地启动命令
+
 这份文档分成三种启动方式：
 
 - 推荐演示方式：MySQL + 本地内存缓存
 - 正式方式：MySQL + Redis
 - 临时演示方式：SQLite + 本地内存缓存
 
-如果你现在只是想手动把功能点一遍，直接用下面的“方式 A：MySQL 演示方式”。当前我已经按这个方式启动过服务。
+如果你现在只是想手动把功能点一遍，直接用下面的“方式 A：MySQL 演示方式”。
 
 ## 方式 A：MySQL 演示方式
 
 这个方式使用 MySQL，但不依赖 Redis。缓存使用 Django 本地内存缓存，适合本机答辩演示。
 
-### 1. 打开终端并进入项目目录
+### 启动命令
+
+1. 打开终端并进入项目目录
 
 ```powershell
 cd E:\projects\book-recommender-cf
 ```
 
-### 2. 设置当前终端的 MySQL 参数
+2. 设置当前终端的 MySQL 参数
 
 这些变量只在当前 PowerShell 窗口里生效，不会写进项目文件。
 
@@ -31,14 +37,14 @@ $env:MYSQL_PORT='3306'
 $env:DJANGO_SETTINGS_MODULE='book_recommender.settings_mysql_demo'
 ```
 
-### 3. 初始化 MySQL 数据库
+3. 初始化 MySQL 数据库
 
 ```powershell
 mysql -u root -p<填写你的 MySQL root 密码> -h 127.0.0.1 -P 3306 -e "CREATE DATABASE IF NOT EXISTS book_recommender_cf CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 conda run -n bookrec311 python manage.py migrate --settings=book_recommender.settings_mysql_demo
 ```
 
-### 4. 初始化演示账号、图书、评分、推荐和实验数据
+4. 初始化演示账号、图书、评分、推荐和实验数据
 
 ```powershell
 conda run -n bookrec311 python scripts/init_demo_data.py
@@ -75,7 +81,7 @@ conda run -n bookrec311 python manage.py rebuild_recommendations --settings=book
 conda run -n bookrec311 python manage.py evaluate_recommenders --settings=book_recommender.settings_mysql_demo
 ```
 
-### 5. 启动服务
+5. 启动服务
 
 ```powershell
 conda run -n bookrec311 python manage.py runserver 127.0.0.1:8000 --settings=book_recommender.settings_mysql_demo
@@ -85,50 +91,49 @@ conda run -n bookrec311 python manage.py runserver 127.0.0.1:8000 --settings=boo
 
 `http://127.0.0.1:8000/`
 
-当前已启动的服务：
+服务启动后：
 
-- 地址：`http://127.0.0.1:8000/`
-- 监听 PID：`31972`
-- 重新查询 PID：
+- 浏览器打开地址：`http://127.0.0.1:8000/`
+- 查询当前监听 PID：
 
 ```powershell
 netstat -ano | Select-String ':8000'
 ```
 
-- 停止命令：
+- 停止时，先用上面的命令查到 PID，再执行：
 
 ```powershell
-Stop-Process -Id 31972 -Force
+Stop-Process -Id <PID> -Force
 ```
 
-## 现在你应该怎么点
+## 二、页面怎么点 / 看到什么
 
-### 先测普通用户路径
+### 普通用户路径
 
-1. 打开首页，确认顶部导航能看到：`Browse books`、`Experiments`、`Log in`、`Register`
-2. 点击右上角 `Log in`
+1. 打开首页，确认顶部导航能看到：`浏览图书`、`实验结果`、`登录`、`注册`
+2. 点击 `登录`
 3. 登录 `demo_reader` / `DemoPass123!`
-4. 登录后回到首页，确认顶部导航出现：`Recommendations`、`Profile`
-5. 点击 `Browse books`，检查图书列表页是否正常
+4. 登录后回到首页，确认顶部导航出现：`推荐中心`、`个人中心`
+5. 点击 `浏览图书`，检查图书列表页是否正常
 6. 点开任意一本书，检查详情页是否有：图书信息、分类、评分入口、相似图书
 7. 打开个人中心：`/accounts/profile/`
-8. 确认能看到：用户名、`Recommendation state: personalized`、至少 3 条评分记录
-9. 在个人中心点击 `Recommendation center`
-10. 确认推荐页能看到推荐书目和推荐理由，例如 `Similar to your ratings` 或 `Popular fallback because ItemCF had sparse data`
+8. 确认能看到：用户名、`推荐状态：个性化推荐`、至少 3 条评分记录
+9. 在个人中心点击 `推荐中心`
+10. 确认推荐页能看到推荐书目和推荐理由，例如 `与你的评分相似` 或 `由于 ItemCF 数据稀疏，当前显示热门兜底结果`
 11. 打开 `http://127.0.0.1:8000/experiments/`
-12. 确认实验页能看到：`K-value checkpoints`、`Precision curves`、`Recall curves`、`Case studies`、`Similarity comparison`、`Random interaction split`
+12. 确认实验页能看到：`K 值检查点`、`精确率曲线`、`召回率曲线`、`案例分析`、`相似度对比`、`随机交互划分`
 
-### 再测管理员路径
+### 管理员路径
 
 1. 先退出当前账号
 2. 登录 `thesis_admin` / `AdminPass123!`
 3. 打开 `http://127.0.0.1:8000/dashboard/`
-4. 确认页面能看到：`Operations overview`
-5. 确认页面能看到：最新离线任务、Processed users、`Trigger rebuild`
-6. 点击 `Trigger rebuild`
-7. 刷新 dashboard，确认页面仍能正常打开
-8. 记住：dashboard 按钮是手动触发路径；每日自动 rebuild 路径由 `scripts/register_daily_rebuild_task.ps1` 注册
-9. 每日自动 rebuild 已注册为 Windows 计划任务。查询命令：
+4. 确认页面能看到：`运维总览`
+5. 确认页面能看到：最新离线任务、`已处理用户`、`手动触发刷新`
+6. 点击 `手动触发刷新`
+7. 刷新管理页，确认页面仍能正常打开
+8. 记住：管理页里的手动触发按钮是临时操作路径；每日自动重建路径由 `scripts/register_daily_rebuild_task.ps1` 注册
+9. 每日自动重建已注册为 Windows 计划任务。查询命令：
 
 ```powershell
 Get-ScheduledTask -TaskName BookRecommenderDailyRebuild | Select-Object TaskName,State
@@ -137,7 +142,7 @@ Get-ScheduledTaskInfo -TaskName BookRecommenderDailyRebuild | Select-Object Last
 
 最近一次手动触发验证结果：`LastTaskResult = 0`，表示手动触发路径执行成功。这个计划任务使用当前 Windows 交互账号注册，适合本机答辩演示；要让它按 02:00 自动运行，需要该 Windows 用户保持登录。任务读取当前项目根目录下被 Git 忽略的 `.env` 中的 MySQL/Redis 配置。
 
-10. 点击 `Open Django Admin`
+10. 点击 `打开 Django 管理后台`
 11. 确认 `http://127.0.0.1:8000/admin/` 可以访问
 
 ## 方式 B：正式方式

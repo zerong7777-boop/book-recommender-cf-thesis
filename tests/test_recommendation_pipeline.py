@@ -69,9 +69,7 @@ def test_itemcf_fallback_excludes_rated_books_and_caches_payload():
     assert items
     rated_ids = {book.id for book in rated_books}
     assert all(item.book_id not in rated_ids for item in items)
-    assert all(
-        item.reason == "Popular fallback because ItemCF had sparse data" for item in items
-    )
+    assert all(item.reason == "ItemCF 数据过稀时采用热门回退" for item in items)
     assert unrated_book.id in {item.book_id for item in items}
 
     payload = cache.get(user_recommendation_cache_key(user.id))
@@ -196,7 +194,7 @@ def test_rebuild_uses_imported_interactions_to_strengthen_itemcf():
     items = list(result.items.select_related("book").order_by("rank"))
     assert items
     assert items[0].book_id == books[3].id
-    assert items[0].reason == "Similar to your ratings"
+    assert items[0].reason == "与你的评分相似"
 
 
 @pytest.mark.django_db

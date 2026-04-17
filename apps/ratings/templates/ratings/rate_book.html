@@ -1,30 +1,30 @@
 {% extends "base.html" %}
 
-{% block title %}Rate {{ book.title }} | Book Recommender{% endblock %}
+{% block title %}评分 {{ book.title }} | 图书推荐系统{% endblock %}
 
 {% block content %}
   <section class="content-panel">
     <div class="row g-4 align-items-start">
       <div class="col-lg-7">
-        <p class="section-kicker">Rating form</p>
-        <h1 class="page-title">Rate {{ book.title }}</h1>
-        <p class="section-description">Choose a score from 1 to 5 to update the user profile and the next offline recommendation rebuild.</p>
+        <p class="section-kicker">评分表单</p>
+        <h1 class="page-title">评分 {{ book.title }}</h1>
+        <p class="section-description">请选择 1 到 5 之间的评分，以更新用户画像并触发下一轮离线推荐重建。</p>
         <form method="post" class="rating-form-stack mt-4">
           {% csrf_token %}
           {{ form.as_p }}
           <div class="panel-actions">
-            <button type="submit" class="btn btn-dark">Save rating</button>
-            <a class="btn btn-outline-dark" href="{% url 'catalog:book_detail' book.pk %}">Back to detail</a>
+            <button type="submit" class="btn btn-dark">保存评分</button>
+            <a class="btn btn-outline-dark" href="{% url 'catalog:book_detail' book.pk %}">返回详情</a>
           </div>
         </form>
       </div>
       <div class="col-lg-5">
         <article class="path-card h-100">
-          <p class="small-label mb-2">Book summary</p>
+          <p class="small-label mb-2">图书摘要</p>
           <h2 class="h3 mb-2">{{ book.title }}</h2>
           <p class="small-label mb-2">{{ book.author }}</p>
           <p class="small-label mb-2">{{ book.category.name }}</p>
-          <p class="small-label mb-0">Average {{ book.average_rating }} / 5 from {{ book.rating_count }} readers</p>
+          <p class="small-label mb-0">来自 {{ book.rating_count }} 位读者的平均评分：{{ book.average_rating }} / 5</p>
         </article>
       </div>
     </div>

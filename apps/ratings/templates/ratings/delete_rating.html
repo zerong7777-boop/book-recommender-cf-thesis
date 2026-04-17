@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}Delete rating | Book Recommender{% endblock %}
+{% block title %}删除评分 | 图书推荐系统{% endblock %}
 
 {% block content %}
   <section class="auth-panel">
-    <p class="section-kicker">Rating removal</p>
-    <h1 class="page-title">Delete rating for {{ book.title }}</h1>
-    <p class="auth-hint">This removes the current effective rating and records the delete action in rating history.</p>
+    <p class="section-kicker">删除评分</p>
+    <h1 class="page-title">删除 {{ book.title }} 的评分</h1>
+    <p class="auth-hint">这会移除当前生效的评分，并在评分历史中记录删除操作。</p>
     <form method="post">
       {% csrf_token %}
       <div class="panel-actions">
-        <button type="submit" class="btn btn-danger">Delete rating</button>
-        <a class="btn btn-outline-dark" href="{% url 'accounts:profile' %}">Cancel</a>
+        <button type="submit" class="btn btn-danger">删除评分</button>
+        <a class="btn btn-outline-dark" href="{% url 'accounts:profile' %}">取消</a>
       </div>
     </form>
   </section>

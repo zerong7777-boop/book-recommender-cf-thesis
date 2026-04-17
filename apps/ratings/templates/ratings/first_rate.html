@@ -1,23 +1,23 @@
 {% extends "base.html" %}
 
-{% block title %}Start rating | Book Recommender{% endblock %}
+{% block title %}开始评分 | 图书推荐系统{% endblock %}
 
 {% block content %}
   <section class="state-banner mb-4">
-    <p class="section-kicker">Cold-start flow</p>
-    <h1 class="page-title">Quick-start rating</h1>
-    <p class="section-description mb-3">Your first few ratings turn the system from generic discovery into user-specific recommendations.</p>
+    <p class="section-kicker">冷启动流程</p>
+    <h1 class="page-title">快速评分</h1>
+    <p class="section-description mb-3">前几次评分会把系统从通用发现模式逐步引导到面向你的个性化推荐。</p>
     <div class="panel-actions">
-      <a class="btn btn-dark" href="{% url 'catalog:book_list' %}">Browse books</a>
-      <a class="btn btn-outline-dark" href="{% url 'accounts:profile' %}">Go to profile</a>
+      <a class="btn btn-dark" href="{% url 'catalog:book_list' %}">浏览图书</a>
+      <a class="btn btn-outline-dark" href="{% url 'accounts:profile' %}">进入个人中心</a>
     </div>
   </section>
 
   <section class="content-panel">
     <div class="section-header-row">
       <div>
-        <p class="section-kicker">Suggested titles</p>
-        <h2 class="section-title h1 mb-0">Popular books to rate first</h2>
+        <p class="section-kicker">推荐书目</p>
+        <h2 class="section-title h1 mb-0">适合先评分的热门图书</h2>
       </div>
     </div>
     {% if books %}
@@ -25,24 +25,24 @@
         {% for book in books %}
           <div class="col-md-6 col-xl-4">
             <article class="path-card h-100">
-              <p class="small-label mb-2">Quick score form</p>
+              <p class="small-label mb-2">快速评分表单</p>
               <h3 class="h4 mb-2"><a href="{% url 'catalog:book_detail' book.pk %}">{{ book.title }}</a></h3>
               <p class="small-label mb-2">{{ book.author }}</p>
-              <p class="small-label mb-4">Rating {{ book.average_rating }} / 5 from {{ book.rating_count }} readers</p>
+              <p class="small-label mb-4">来自 {{ book.rating_count }} 位读者的平均评分：{{ book.average_rating }} / 5</p>
               <form method="post" action="{% url 'ratings:rate-book' book.pk %}" class="rating-inline-form">
                 {% csrf_token %}
                 <div>
-                  <label class="form-label small" for="score-{{ book.pk }}">Your score</label>
+                  <label class="form-label small" for="score-{{ book.pk }}">你的评分</label>
                   <input id="score-{{ book.pk }}" class="form-control" type="number" name="score" min="1" max="5" value="5">
                 </div>
-                <button class="btn btn-dark" type="submit">Save</button>
+                <button class="btn btn-dark" type="submit">保存</button>
               </form>
             </article>
           </div>
         {% endfor %}
       </div>
     {% else %}
-      <p class="empty-state mb-0">No books are available for first ratings yet.</p>
+      <p class="empty-state mb-0">目前还没有可用于首次评分的图书。</p>
     {% endif %}
   </section>
 {% endblock %}

@@ -1,23 +1,23 @@
 ﻿{% extends "base.html" %}
 
-{% block title %}Books | Book Recommender{% endblock %}
+{% block title %}图书列表 | 图书推荐系统{% endblock %}
 
 {% block content %}
   <section class="content-panel mb-4">
-    <p class="section-kicker">Catalog</p>
-    <h1 class="page-title">Browse the library</h1>
-    <p class="section-description">Search by title or author, then open a detail page to inspect metadata, similar books, and rating actions.</p>
+    <p class="section-kicker">目录</p>
+    <h1 class="page-title">浏览图书</h1>
+    <p class="section-description">按书名或作者搜索，然后打开详情页查看元数据、相似图书和评分操作。</p>
     <form action="{% url 'catalog:book_list' %}" method="get" class="row g-2 mt-3">
       <div class="col-md-9">
-        <label for="book-search" class="visually-hidden">Search books</label>
-        <input id="book-search" class="form-control" type="search" name="q" value="{{ query }}" placeholder="Search by title or author">
+        <label for="book-search" class="visually-hidden">搜索图书</label>
+        <input id="book-search" class="form-control" type="search" name="q" value="{{ query }}" placeholder="按书名或作者搜索">
       </div>
       <div class="col-md-3">
-        <button class="btn btn-dark w-100" type="submit">Search catalog</button>
+        <button class="btn btn-dark w-100" type="submit">搜索目录</button>
       </div>
     </form>
     {% if query %}
-      <p class="meta-copy mt-3 mb-0">Showing results for "{{ query }}".</p>
+      <p class="meta-copy mt-3 mb-0">正在显示“{{ query }}”的搜索结果。</p>
     {% endif %}
   </section>
 
@@ -31,7 +31,7 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="empty-state mb-0">No books matched the current search.</p>
+      <p class="empty-state mb-0">没有找到符合当前搜索条件的图书。</p>
     {% endif %}
   </section>
 {% endblock %}

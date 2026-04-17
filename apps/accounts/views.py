@@ -4,7 +4,7 @@ from django.contrib.auth.views import LoginView, LogoutView, PasswordChangeView
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 
-from apps.accounts.forms import LoginForm, RegistrationForm
+from apps.accounts.forms import LocalizedPasswordChangeForm, LoginForm, RegistrationForm
 from apps.ratings.models import UserRating
 from apps.recommendations.selectors import recommendation_preview_for_user, recommendation_state_for_user
 
@@ -47,5 +47,6 @@ def profile_view(request):
 
 
 class UserPasswordChangeView(PasswordChangeView):
+    form_class = LocalizedPasswordChangeForm
     success_url = reverse_lazy("accounts:profile")
     template_name = "accounts/password_change.html"

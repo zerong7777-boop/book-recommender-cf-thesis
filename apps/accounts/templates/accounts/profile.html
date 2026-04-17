@@ -1,23 +1,32 @@
 ﻿{% extends "base.html" %}
 
-{% block title %}Profile | Book Recommender{% endblock %}
+{% block title %}个人中心 | 图书推荐系统{% endblock %}
 
 {% block content %}
   <section class="content-panel mb-4">
     <div class="section-header-row">
       <div>
-        <p class="section-kicker">Personal center</p>
-        <h1 class="page-title mb-1">{{ request.user.username }}</h1>
-        <p class="section-description mb-0">Track your rating history and jump directly into recommendation flows.</p>
+        <p class="section-kicker">个人中心</p>
+        <h1 class="page-title mb-1">个人中心</h1>
+        <p class="section-description mb-0">{{ request.user.username }}，可在这里查看评分记录并直接进入推荐流程。</p>
       </div>
       <div class="panel-actions">
-        <a class="btn btn-dark" href="{% url 'ratings:first-rate' %}">Rate your first book</a>
-        <a class="btn btn-outline-dark" href="{% url 'recommendations:list' %}">Recommendation center</a>
+        <a class="btn btn-dark" href="{% url 'ratings:first-rate' %}">去完成首次评分</a>
+        <a class="btn btn-outline-dark" href="{% url 'recommendations:list' %}">推荐中心</a>
       </div>
     </div>
     <ul class="status-list">
-      <li class="status-pill">Recommendation state: {{ recommendation_state }}</li>
-      <li class="status-pill"><a href="{% url 'accounts:password_change' %}">Password change</a></li>
+      <li class="status-pill">
+        推荐状态：
+        {% if recommendation_state == "personalized" %}
+          个性化推荐
+        {% elif recommendation_state == "cold-start" %}
+          冷启动推荐
+        {% else %}
+          热门推荐
+        {% endif %}
+      </li>
+      <li class="status-pill"><a href="{% url 'accounts:password_change' %}">修改密码</a></li>
     </ul>
   </section>
 
@@ -25,19 +34,19 @@
     <section class="content-panel mb-4">
       <div class="section-header-row">
         <div>
-          <p class="section-kicker">Why these picks</p>
-          <h2 class="section-title h1 mb-0">Recommended because</h2>
+          <p class="section-kicker">推荐理由</p>
+          <h2 class="section-title h1 mb-0">推荐原因</h2>
         </div>
       </div>
       <div class="row g-3">
         {% for item in recommendation_preview.items %}
           <div class="col-lg-4">
             <article class="path-card h-100">
-              <p class="small-label mb-2">Rank #{{ item.rank }}</p>
+              <p class="small-label mb-2">第 {{ item.rank }} 位</p>
               <h3 class="h4 mb-2">{{ item.title }}</h3>
               <p class="small-label mb-2">{{ item.author }}</p>
               <p class="mb-3">{{ item.reason }}</p>
-              <a class="btn btn-outline-dark btn-sm" href="{% url 'catalog:book_detail' item.book_id %}">Open detail</a>
+              <a class="btn btn-outline-dark btn-sm" href="{% url 'catalog:book_detail' item.book_id %}">查看详情</a>
             </article>
           </div>
         {% endfor %}
@@ -48,8 +57,8 @@
   <section class="content-panel">
     <div class="section-header-row">
       <div>
-        <p class="section-kicker">Ratings</p>
-        <h2 class="section-title h1 mb-0">Your ratings</h2>
+        <p class="section-kicker">评分记录</p>
+        <h2 class="section-title h1 mb-0">我的评分</h2>
       </div>
     </div>
     {% if ratings %}
@@ -63,14 +72,14 @@
               </div>
               <form action="{% url 'ratings:delete-rating' rating.book.pk %}" method="post" class="m-0">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                <button type="submit" class="btn btn-sm btn-outline-danger">删除</button>
               </form>
             </article>
           </div>
         {% endfor %}
       </div>
     {% else %}
-      <p class="empty-state mb-0">You have not rated any books yet.</p>
+      <p class="empty-state mb-0">你还没有为任何图书评分。</p>
     {% endif %}
   </section>
 {% endblock %}

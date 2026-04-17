@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, UserCreationForm
 
 
 class RegistrationForm(UserCreationForm):
@@ -7,6 +7,13 @@ class RegistrationForm(UserCreationForm):
 
     class Meta(UserCreationForm.Meta):
         fields = ("username", "email", "password1", "password2")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["username"].label = "用户名"
+        self.fields["email"].label = "邮箱"
+        self.fields["password1"].label = "密码"
+        self.fields["password2"].label = "确认密码"
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -17,4 +24,15 @@ class RegistrationForm(UserCreationForm):
 
 
 class LoginForm(AuthenticationForm):
-    pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["username"].label = "用户名"
+        self.fields["password"].label = "密码"
+
+
+class LocalizedPasswordChangeForm(PasswordChangeForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["old_password"].label = "当前密码"
+        self.fields["new_password1"].label = "新密码"
+        self.fields["new_password2"].label = "确认新密码"

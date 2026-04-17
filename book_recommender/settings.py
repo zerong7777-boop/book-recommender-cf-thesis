@@ -107,6 +107,8 @@ CACHES = {
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
+LANGUAGE_CODE = "zh-hans"
+USE_I18N = True
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "book_recommender" / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"

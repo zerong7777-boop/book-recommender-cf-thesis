@@ -57,7 +57,7 @@ def test_staff_dashboard_shows_latest_job(client):
     assert response.status_code == 200
     content = response.content.decode()
     assert "rebuild_recommendations" in content
-    assert "success" in content
+    assert "成功" in content
 
 
 @pytest.mark.django_db
@@ -81,9 +81,9 @@ def test_staff_dashboard_shows_ops_summary_cards(client):
     response = client.get(reverse("dashboard:home"))
 
     content = response.content.decode()
-    assert "Operations overview" in content
-    assert "Trigger rebuild" in content
-    assert "Recent recommendation results" in content
+    assert "运维总览" in content
+    assert "手动触发刷新" in content
+    assert "最近推荐结果" in content
 
 
 @pytest.mark.django_db
@@ -106,7 +106,7 @@ def test_staff_dashboard_clears_stale_lock_from_home(client, monkeypatch, settin
     response = client.get(reverse("dashboard:home"))
 
     assert response.status_code == 200
-    assert "A rebuild is already running." not in response.content.decode()
+    assert "当前已有刷新任务正在运行。" not in response.content.decode()
     assert not (runtime_dir / "dashboard_rebuild.lock").exists()
 
 

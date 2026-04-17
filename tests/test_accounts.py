@@ -56,7 +56,7 @@ def test_profile_page_shows_navigation_to_recommendations(client, django_user_mo
     content = response.content.decode()
 
     assert reverse("recommendations:list") in content
-    assert "Recommendation center" in content
+    assert "推荐中心" in content
 
 
 @pytest.mark.django_db
@@ -115,6 +115,22 @@ def test_profile_page_shows_recommendation_reason_preview(client, django_user_mo
     response = client.get(reverse("accounts:profile"))
 
     content = response.content.decode()
-    assert "Recommended because" in content
+    assert "推荐原因" in content
     assert "Preview Pick" in content
     assert "Because you liked Rated 1" in content
+
+
+@pytest.mark.django_db
+def test_password_change_page_uses_chinese_labels(client, django_user_model):
+    django_user_model.objects.create_user(username="reader6", email="reader6@example.com", password="ReaderPass123")
+    client.login(username="reader6", password="ReaderPass123")
+
+    response = client.get(reverse("accounts:password_change"))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "修改密码" in content
+    assert "当前密码" in content
+    assert "新密码" in content
+    assert "确认新密码" in content
+    assert "返回个人中心" in content

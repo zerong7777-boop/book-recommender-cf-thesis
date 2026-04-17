@@ -1,6 +1,6 @@
 ﻿{% extends "base.html" %}
 
-{% block title %}{{ book.title }} | Book Recommender{% endblock %}
+{% block title %}{{ book.title }} | 图书推荐系统{% endblock %}
 
 {% block content %}
   <section class="content-panel mb-4">
@@ -15,24 +15,24 @@
         </div>
       </div>
       <div class="col-lg-8">
-        <p class="section-kicker">Book detail</p>
+        <p class="section-kicker">图书详情</p>
         <h1 class="page-title">{{ book.title }}</h1>
         <p class="lead mb-3">{{ book.author }}</p>
         <ul class="detail-meta-list mb-4">
           <li class="detail-meta"><a href="{% url 'catalog:category_list' book.category.slug %}">{{ book.category.name }}</a></li>
           {% if book.publication_year %}<li class="detail-meta">{{ book.publication_year }}</li>{% endif %}
           {% if book.publisher %}<li class="detail-meta">{{ book.publisher }}</li>{% endif %}
-          <li class="detail-meta">Average {{ book.average_rating }} / 5</li>
-          <li class="detail-meta">{{ book.rating_count }} ratings</li>
+          <li class="detail-meta">平均评分 {{ book.average_rating }} / 5</li>
+          <li class="detail-meta">{{ book.rating_count }} 次评分</li>
         </ul>
-        <p class="section-description mb-4">{{ book.description|default:"No description is available for this title yet." }}</p>
+        <p class="section-description mb-4">{{ book.description|default:"这本书目前还没有简介。" }}</p>
         <div class="detail-actions">
           {% if request.user.is_authenticated %}
-            <a class="btn btn-dark" href="{% url 'ratings:rate-book' book.pk %}">Rate this book</a>
-            <a class="btn btn-outline-dark" href="{% url 'recommendations:list' %}">Open recommendations</a>
+            <a class="btn btn-dark" href="{% url 'ratings:rate-book' book.pk %}">去评分</a>
+            <a class="btn btn-outline-dark" href="{% url 'recommendations:list' %}">打开推荐中心</a>
           {% else %}
-            <a class="btn btn-dark" href="{% url 'accounts:login' %}">Log in to rate</a>
-            <a class="btn btn-outline-dark" href="{% url 'accounts:register' %}">Create account</a>
+            <a class="btn btn-dark" href="{% url 'accounts:login' %}">登录后评分</a>
+            <a class="btn btn-outline-dark" href="{% url 'accounts:register' %}">创建账号</a>
           {% endif %}
         </div>
       </div>
@@ -41,11 +41,21 @@
 
   {% if recommendation_explanation %}
     <section class="state-banner mb-4">
-      <p class="section-kicker">Recommendation explanation</p>
-      <h2 class="section-title h1 mb-3">Why this book is recommended to you</h2>
+      <p class="section-kicker">推荐说明</p>
+      <h2 class="section-title h1 mb-3">为什么向你推荐这本书</h2>
       <div class="panel-actions mb-3">
-        <span class="status-pill">Rank #{{ recommendation_explanation.rank }}</span>
-        <span class="status-pill">{{ recommendation_explanation.state }}</span>
+        <span class="status-pill">第 {{ recommendation_explanation.rank }} 名</span>
+        <span class="status-pill">
+          {% if recommendation_explanation.state == "hot" %}
+            热门推荐
+          {% elif recommendation_explanation.state == "cold-start" %}
+            冷启动推荐
+          {% elif recommendation_explanation.state == "personalized" %}
+            个性化推荐
+          {% else %}
+            {{ recommendation_explanation.state }}
+          {% endif %}
+        </span>
       </div>
       <p class="mb-0">{{ recommendation_explanation.reason }}</p>
     </section>
@@ -54,8 +64,8 @@
   <section class="content-panel">
     <div class="section-header-row">
       <div>
-        <p class="section-kicker">Neighbor titles</p>
-        <h2 class="section-title h1 mb-0">Similar books</h2>
+        <p class="section-kicker">邻近图书</p>
+        <h2 class="section-title h1 mb-0">相似图书</h2>
       </div>
     </div>
     {% if similar_books %}
@@ -63,12 +73,12 @@
         {% for item in similar_books %}
           <div class="col-sm-6 col-xl-4">
             {% include "catalog/_book_card.html" with book=item.target_book %}
-            <p class="small-label mt-2 mb-0">Similarity score: {{ item.score|floatformat:2 }}</p>
+            <p class="small-label mt-2 mb-0">相似度得分：{{ item.score|floatformat:2 }}</p>
           </div>
         {% endfor %}
       </div>
     {% else %}
-      <p class="empty-state mb-0">No similar books are available yet. Run the offline rebuild to generate similarity results.</p>
+      <p class="empty-state mb-0">目前还没有相似图书。请运行离线重建以生成相似度结果。</p>
     {% endif %}
   </section>
 {% endblock %}

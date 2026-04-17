@@ -188,13 +188,13 @@ def test_experiment_results_page_reads_summary(client, settings):
     content = response.content.decode()
     assert "itemcf" in content
     assert "0.1" in content
-    assert "Offline evaluation lab" in content
-    assert "K-value checkpoints" in content
-    assert "Best precision" in content
-    assert "Precision curves" in content
-    assert "Case studies" in content
-    assert "Similarity comparison" in content
-    assert "Random interaction split" in content
+    assert "离线评估实验室" in content
+    assert "K 值检查点" in content
+    assert "最佳精确率" in content
+    assert "精确率曲线" in content
+    assert "案例分析" in content
+    assert "相似度对比" in content
+    assert "随机交互划分" in content
     assert "pearson" in content
 
 

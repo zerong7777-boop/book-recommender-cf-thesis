@@ -1,18 +1,18 @@
 ﻿{% extends "base.html" %}
 
-{% block title %}Log in | Book Recommender{% endblock %}
+{% block title %}登录 | 图书推荐系统{% endblock %}
 
 {% block content %}
   <section class="auth-panel">
-    <p class="section-kicker">Account access</p>
-    <h1 class="page-title">Log in</h1>
-    <p class="auth-hint">Use a seeded demo account to jump straight to ratings, recommendations, and dashboard verification.</p>
+    <p class="section-kicker">账户访问</p>
+    <h1 class="page-title">登录</h1>
+    <p class="auth-hint">使用演示账号即可直接体验评分、推荐和后台验证流程。</p>
     <form method="post">
       {% csrf_token %}
       {{ form.as_p }}
       <div class="panel-actions">
-        <button type="submit" class="btn btn-dark">Log in</button>
-        <a class="btn btn-outline-dark" href="{% url 'accounts:register' %}">Register</a>
+        <button type="submit" class="btn btn-dark">登录</button>
+        <a class="btn btn-outline-dark" href="{% url 'accounts:register' %}">注册</a>
       </div>
     </form>
   </section>

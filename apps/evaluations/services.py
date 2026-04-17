@@ -496,9 +496,9 @@ def generate_evaluation_summary() -> dict:
             {
                 "name": name,
                 "summary": (
-                    f"Evaluated on {user_count} leave-one-out subjects. "
-                    f"Best precision {best_row['precision']:.4f} at K={best_row['k']}, "
-                    f"recall {best_row['recall']:.4f}."
+                    f"已在 {user_count} 个留一法样本上完成评估。"
+                    f"最佳精确率为 {best_row['precision']:.4f}，出现在 K={best_row['k']}；"
+                    f"对应召回率为 {best_row['recall']:.4f}。"
                 ),
                 "best_precision": best_row["precision"],
                 "best_recall": best_row["recall"],
@@ -536,7 +536,7 @@ def generate_evaluation_summary() -> dict:
     random_split = _build_random_split_summary(frame)
     return {
         "metadata": {
-            "dataset_name": "site-ratings+goodbooks-10k",
+            "dataset_name": "站点评分 + Goodbooks-10k",
             "site_user_count": int(site_rows["subject_key"].nunique()) if not site_rows.empty else 0,
             "dataset_user_count": int(imported_rows["subject_key"].nunique()) if not imported_rows.empty else 0,
             "interaction_count": int(len(frame.index)),

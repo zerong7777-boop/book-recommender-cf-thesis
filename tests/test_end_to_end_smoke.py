@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.management import call_command
@@ -28,16 +28,17 @@ def test_thesis_demo_smoke_flow(client):
     assert profile_response.status_code == 200
     profile_html = profile_response.content.decode()
     assert "demo_reader" in profile_html
-    assert "Recommendation state: personalized" in profile_html
-    assert profile_html.count("btn btn-sm btn-outline-danger") >= 3
+    assert "推荐状态" in profile_html
+    assert "个性化推荐" in profile_html
+    assert profile_html.count("/5") >= 3
 
     recommendations_response = client.get(reverse("recommendations:list"))
     assert recommendations_response.status_code == 200
     recommendations_html = recommendations_response.content.decode()
-    assert "Recommendation center" in recommendations_html
+    assert "<h1 class=\"page-title\">推荐中心</h1>" in recommendations_html
     assert (
-        "Popular fallback because ItemCF had sparse data" in recommendations_html
-        or "Similar to your ratings" in recommendations_html
+        "ItemCF 数据过稀时采用热门回退" in recommendations_html
+        or "与你的评分相似" in recommendations_html
     )
     assert "demo reader" not in recommendations_html.lower()
 
@@ -51,7 +52,8 @@ def test_thesis_demo_smoke_flow(client):
     dashboard_response = client.get(reverse("dashboard:home"))
     assert dashboard_response.status_code == 200
     dashboard_html = dashboard_response.content.decode()
-    assert "Operations overview" in dashboard_html
+    assert "运维总览" in dashboard_html
+    assert "手动触发刷新" in dashboard_html
     assert "rebuild_recommendations" in dashboard_html
 
     assert demo_user.is_staff is False

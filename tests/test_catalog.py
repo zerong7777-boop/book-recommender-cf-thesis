@@ -16,8 +16,8 @@ def test_homepage_shows_primary_navigation_entry_points(client):
 
     content = response.content.decode()
 
-    assert "Log in" in content
-    assert "Register" in content
+    assert "浏览图书" in content
+    assert "登录" in content
     assert reverse("catalog:book_list") in content
 
 
@@ -27,9 +27,9 @@ def test_homepage_highlights_book_discovery_sections(client):
 
     content = response.content.decode()
 
-    assert "Discover your next read" in content
-    assert "Browse categories" in content
-    assert "Recommendation picks" in content
+    assert "发现下一本想读的书" in content
+    assert "浏览分类" in content
+    assert "推荐精选" in content
 
 
 @pytest.mark.django_db
@@ -38,9 +38,20 @@ def test_homepage_surfaces_demo_paths_and_experiment_entry(client):
 
     content = response.content.decode()
 
-    assert "Two demo paths" in content
-    assert "Experiment evidence" in content
+    assert "两个演示路径" in content
+    assert "实验依据" in content
     assert reverse("evaluations:results") in content
+
+
+@pytest.mark.django_db
+def test_book_list_page_shows_chinese_copy(client):
+    response = client.get(reverse("catalog:book_list"))
+
+    content = response.content.decode()
+
+    assert "图书列表" in content
+    assert "按书名或作者搜索" in content
+    assert "搜索目录" in content
 
 
 @pytest.mark.django_db

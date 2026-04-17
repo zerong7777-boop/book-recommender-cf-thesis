@@ -1,36 +1,47 @@
 ﻿{% extends "base.html" %}
 {% load static %}
 
-{% block title %}Home | Book Recommender{% endblock %}
+{% block title %}首页 | 图书推荐系统{% endblock %}
 
 {% block content %}
   <section class="hero-shell mb-4 mb-lg-5">
     <div class="row g-0">
       <div class="col-lg-6">
         <div class="hero-copy">
-          <p class="eyebrow">Personalized book discovery</p>
-          <h1 class="hero-title">Discover your next read</h1>
-          <p class="mb-4">Browse the catalog, rate books you know, and compare hot-start, cold-start, and personalized recommendation flows inside one thesis demo.</p>
+          <p class="eyebrow">个性化图书发现</p>
+          <h1 class="hero-title">发现下一本想读的书</h1>
+          <p class="mb-4">浏览图书目录，给你熟悉的书打分，在同一个演示里查看热门推荐、冷启动和个性化推荐流程。</p>
           <div class="hero-cta-group mb-4">
-            <a class="btn btn-dark" href="{% url 'catalog:book_list' %}">Browse books</a>
+            <a class="btn btn-dark" href="{% url 'catalog:book_list' %}">浏览图书</a>
             {% if request.user.is_authenticated %}
-              <a class="btn btn-outline-dark" href="{% url 'recommendations:list' %}">Recommendation center</a>
+              <a class="btn btn-outline-dark" href="{% url 'recommendations:list' %}">推荐中心</a>
             {% else %}
-              <a class="btn btn-outline-dark" href="{% url 'accounts:login' %}">Log in</a>
+              <a class="btn btn-outline-dark" href="{% url 'accounts:login' %}">登录</a>
             {% endif %}
           </div>
           <ul class="status-list">
-            <li class="status-pill">Current mode: {{ recommendation_block.state }}</li>
-            <li class="status-pill">Offline + online read architecture</li>
+            <li class="status-pill">
+              当前模式：
+              {% if recommendation_block.state == "hot" %}
+                热门推荐
+              {% elif recommendation_block.state == "cold-start" %}
+                冷启动推荐
+              {% elif recommendation_block.state == "personalized" %}
+                个性化推荐
+              {% else %}
+                {{ recommendation_block.state }}
+              {% endif %}
+            </li>
+            <li class="status-pill">离线 + 在线阅读架构</li>
           </ul>
           <div class="search-panel">
             <form action="{% url 'catalog:book_list' %}" method="get" class="row g-2 align-items-center">
               <div class="col-md-8">
-                <label for="catalog-search" class="visually-hidden">Search books</label>
-                <input id="catalog-search" class="form-control" type="search" name="q" placeholder="Search by title or author">
+                <label for="catalog-search" class="visually-hidden">搜索图书</label>
+                <input id="catalog-search" class="form-control" type="search" name="q" placeholder="按书名或作者搜索">
               </div>
               <div class="col-md-4">
-                <button class="btn btn-outline-dark w-100" type="submit">Search catalog</button>
+                <button class="btn btn-outline-dark w-100" type="submit">搜索目录</button>
               </div>
             </form>
           </div>
@@ -47,10 +58,10 @@
   <section id="category-section" class="content-panel mb-4">
     <div class="section-header-row">
       <div>
-        <p class="section-kicker">Shelf map</p>
-        <h2 class="section-title h1 mb-0">Browse categories</h2>
+        <p class="section-kicker">分类地图</p>
+        <h2 class="section-title h1 mb-0">浏览分类</h2>
       </div>
-      <a class="btn btn-outline-dark btn-sm" href="{% url 'catalog:book_list' %}">See all books</a>
+      <a class="btn btn-outline-dark btn-sm" href="{% url 'catalog:book_list' %}">查看全部图书</a>
     </div>
     {% if categories %}
       <div class="category-pill-list">
@@ -59,18 +70,18 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="empty-state mb-0">Categories will appear here after the catalog is seeded.</p>
+      <p class="empty-state mb-0">完成目录初始化后，这里会显示各个分类。</p>
     {% endif %}
   </section>
 
   <section class="content-panel">
     <div class="section-header-row">
       <div>
-        <p class="section-kicker">Recommendation layer</p>
-        <h2 class="section-title h1 mb-0">Recommendation picks</h2>
+        <p class="section-kicker">推荐层</p>
+        <h2 class="section-title h1 mb-0">推荐精选</h2>
       </div>
       {% if request.user.is_authenticated %}
-        <a class="btn btn-outline-dark btn-sm" href="{% url 'recommendations:list' %}">Open full list</a>
+        <a class="btn btn-outline-dark btn-sm" href="{% url 'recommendations:list' %}">打开完整列表</a>
       {% endif %}
     </div>
     {% if recommendation_block.items %}
@@ -82,37 +93,37 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="empty-state mb-0">Recommendation results are not ready yet. Seed demo data or run the offline rebuild to populate this section.</p>
+      <p class="empty-state mb-0">推荐结果尚未准备好。请先初始化演示数据，或运行离线重建后再查看这一栏。</p>
     {% endif %}
   </section>
 
   <section class="content-panel mt-4">
     <div class="section-header-row">
       <div>
-        <p class="section-kicker">Demo flow</p>
-        <h2 class="section-title h1 mb-0">Two demo paths</h2>
+        <p class="section-kicker">演示流程</p>
+        <h2 class="section-title h1 mb-0">两个演示路径</h2>
       </div>
     </div>
     <div class="row g-4">
       <div class="col-lg-6">
         <article class="path-card h-100">
-          <p class="small-label mb-2">Seeded mature account</p>
-          <h3 class="h4 mb-3">Jump straight into personalized recommendations</h3>
-          <p class="mb-4">Use the demo reader account to show a ready-made recommendation state, existing ratings, and cached results without waiting for a fresh rebuild.</p>
+          <p class="small-label mb-2">已预置成熟账号</p>
+          <h3 class="h4 mb-3">直接进入个性化推荐</h3>
+          <p class="mb-4">使用演示读者账号即可展示现成的推荐状态、已有评分和缓存结果，无需等待新的重建任务。</p>
           <div class="panel-actions">
-            <a class="btn btn-dark btn-sm" href="{% url 'accounts:login' %}">Log in</a>
-            <a class="btn btn-outline-dark btn-sm" href="{% url 'accounts:profile' %}">Open personal center</a>
+            <a class="btn btn-dark btn-sm" href="{% url 'accounts:login' %}">登录</a>
+            <a class="btn btn-outline-dark btn-sm" href="{% url 'accounts:profile' %}">打开个人中心</a>
           </div>
         </article>
       </div>
       <div class="col-lg-6">
         <article class="path-card h-100">
-          <p class="small-label mb-2">Live cold-start flow</p>
-          <h3 class="h4 mb-3">Register, rate, and trigger the offline loop</h3>
-          <p class="mb-4">Start from a clean account, rate a few titles, then inspect how the system moves from cold-start guidance into refreshed recommendation results.</p>
+          <p class="small-label mb-2">实时冷启动流程</p>
+          <h3 class="h4 mb-3">注册、评分并触发离线循环</h3>
+          <p class="mb-4">从一个全新账号开始，给几本书打分，然后查看系统如何从冷启动引导切换到刷新后的推荐结果。</p>
           <div class="panel-actions">
-            <a class="btn btn-dark btn-sm" href="{% url 'accounts:register' %}">Create account</a>
-            <a class="btn btn-outline-dark btn-sm" href="{% url 'ratings:first-rate' %}">Start rating</a>
+            <a class="btn btn-dark btn-sm" href="{% url 'accounts:register' %}">创建账号</a>
+            <a class="btn btn-outline-dark btn-sm" href="{% url 'ratings:first-rate' %}">开始评分</a>
           </div>
         </article>
       </div>
@@ -123,33 +134,33 @@
     <div class="row g-0 align-items-stretch">
       <div class="col-lg-7">
         <div class="hero-copy">
-          <p class="section-kicker">Evaluation surface</p>
-          <h2 class="section-title h1 mb-3">Experiment evidence</h2>
-          <p class="section-description mb-4">Open the offline evaluation lab to inspect K-value checkpoints, algorithm summaries, and the artifact-backed metrics used in the thesis write-up.</p>
+          <p class="section-kicker">评估面板</p>
+          <h2 class="section-title h1 mb-3">实验依据</h2>
+          <p class="section-description mb-4">打开离线评估页面，查看 K 值检查点、算法摘要以及论文写作中使用的制品化指标。</p>
           <div class="row g-3 mb-4">
             <div class="col-sm-4">
               <article class="metric-card h-100">
-                <p class="small-label mb-1">Guest path</p>
-                <p class="metric-card-value">Hot</p>
-                <p class="small-label mb-0">Fallback recommendations before login.</p>
+                <p class="small-label mb-1">访客路径</p>
+                <p class="metric-card-value">热门</p>
+                <p class="small-label mb-0">登录前的兜底推荐。</p>
               </article>
             </div>
             <div class="col-sm-4">
               <article class="metric-card h-100">
-                <p class="small-label mb-1">New reader</p>
-                <p class="metric-card-value">Cold</p>
-                <p class="small-label mb-0">Guided rating workflow for sparse user data.</p>
+                <p class="small-label mb-1">新读者</p>
+                <p class="metric-card-value">冷启动</p>
+                <p class="small-label mb-0">面向稀疏用户数据的评分引导流程。</p>
               </article>
             </div>
             <div class="col-sm-4">
               <article class="metric-card h-100">
-                <p class="small-label mb-1">Active reader</p>
+                <p class="small-label mb-1">活跃读者</p>
                 <p class="metric-card-value">ItemCF</p>
-                <p class="small-label mb-0">Offline-generated personalized list.</p>
+                <p class="small-label mb-0">离线生成的个性化列表。</p>
               </article>
             </div>
           </div>
-          <a class="btn btn-dark" href="{% url 'evaluations:results' %}">Open experiment results</a>
+          <a class="btn btn-dark" href="{% url 'evaluations:results' %}">查看实验结果</a>
         </div>
       </div>
       <div class="col-lg-5">

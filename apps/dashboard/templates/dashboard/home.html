@@ -1,59 +1,97 @@
 ﻿{% extends "base.html" %}
 
-{% block title %}Dashboard | Book Recommender{% endblock %}
+{% block title %}管理面板 | 图书推荐系统{% endblock %}
 
 {% block content %}
   <section class="dashboard-shell mb-4">
     <div class="dashboard-heading">
       <div>
-        <p class="section-kicker">Staff workspace</p>
-        <h1 class="page-title mb-2">Operations overview</h1>
-        <p class="section-description mb-0">Review the latest offline job, trigger recommendation rebuilds, and inspect the freshest generated result batches.</p>
+        <p class="section-kicker">管理工作区</p>
+        <h1 class="page-title mb-2">运维总览</h1>
+        <p class="section-description mb-0">查看最新离线任务、手动触发推荐刷新，并检查最新生成的结果批次。</p>
       </div>
       <div class="panel-actions">
-        <a class="btn btn-outline-dark" href="{% url 'admin:index' %}">Open Django Admin</a>
+        <a class="btn btn-outline-dark" href="{% url 'admin:index' %}">打开 Django 管理后台</a>
       </div>
     </div>
 
     <div class="row g-3 mb-4">
       <div class="col-md-4">
         <article class="metric-card h-100">
-          <p class="small-label mb-1">Latest job</p>
-          <p class="metric-card-value">{% if latest_job %}{{ latest_job.status|title }}{% else %}Idle{% endif %}</p>
-          <p class="small-label mb-0">{% if latest_job %}{{ latest_job.job_name }} ({{ latest_job.status }}){% else %}No offline job has run yet.{% endif %}</p>
+          <p class="small-label mb-1">最新任务</p>
+          <p class="metric-card-value">
+            {% if latest_job %}
+              {% if latest_job.status == "success" %}
+                成功
+              {% elif latest_job.status == "running" %}
+                运行中
+              {% elif latest_job.status == "pending" %}
+                等待中
+              {% elif latest_job.status == "failed" %}
+                失败
+              {% elif latest_job.status == "cancelled" %}
+                已取消
+              {% else %}
+                {{ latest_job.status }}
+              {% endif %}
+            {% else %}
+              空闲
+            {% endif %}
+          </p>
+          <p class="small-label mb-0">
+            {% if latest_job %}
+              {{ latest_job.job_name }}（
+              {% if latest_job.status == "success" %}
+                成功
+              {% elif latest_job.status == "running" %}
+                运行中
+              {% elif latest_job.status == "pending" %}
+                等待中
+              {% elif latest_job.status == "failed" %}
+                失败
+              {% elif latest_job.status == "cancelled" %}
+                已取消
+              {% else %}
+                {{ latest_job.status }}
+              {% endif %}
+              ）
+            {% else %}
+              尚未运行任何离线任务。
+            {% endif %}
+          </p>
         </article>
       </div>
       <div class="col-md-4">
         <article class="metric-card h-100">
-          <p class="small-label mb-1">Processed users</p>
+          <p class="small-label mb-1">已处理用户</p>
           <p class="metric-card-value">{% if latest_job %}{{ latest_job.processed_user_count }}{% else %}0{% endif %}</p>
-          <p class="small-label mb-0">{% if latest_job %}{{ latest_job.summary }}{% else %}Run a rebuild to populate metrics.{% endif %}</p>
+          <p class="small-label mb-0">{% if latest_job %}{{ latest_job.summary }}{% else %}运行刷新后即可填充统计。{% endif %}</p>
         </article>
       </div>
       <div class="col-md-4">
         <article class="metric-card h-100">
-          <p class="small-label mb-1">Rebuild state</p>
-          <p class="metric-card-value">{% if rebuild_in_progress %}Running{% else %}Ready{% endif %}</p>
-          <p class="small-label mb-0">Manual trigger for thesis demos and debugging.</p>
+          <p class="small-label mb-1">刷新状态</p>
+          <p class="metric-card-value">{% if rebuild_in_progress %}运行中{% else %}就绪{% endif %}</p>
+          <p class="small-label mb-0">用于演示和调试的手动刷新入口。</p>
         </article>
       </div>
     </div>
 
     {% if rebuild_in_progress %}
-      <div class="alert alert-warning mb-4">A rebuild is already running.</div>
+      <div class="alert alert-warning mb-4">当前已有刷新任务正在运行。</div>
     {% endif %}
 
     <form method="post" action="{% url 'dashboard:trigger_rebuild' %}" class="panel-actions">
       {% csrf_token %}
-      <button class="btn btn-dark" type="submit" {% if rebuild_in_progress %}disabled{% endif %}>Trigger rebuild</button>
+      <button class="btn btn-dark" type="submit" {% if rebuild_in_progress %}disabled{% endif %}>手动触发刷新</button>
     </form>
   </section>
 
   <section class="dashboard-shell">
     <div class="section-header-row">
       <div>
-        <p class="section-kicker">Recent outputs</p>
-        <h2 class="section-title h1 mb-0">Recent recommendation results</h2>
+        <p class="section-kicker">最近输出</p>
+        <h2 class="section-title h1 mb-0">最近推荐结果</h2>
       </div>
     </div>
     {% if latest_results %}
@@ -61,16 +99,16 @@
         <table class="table align-middle">
           <thead>
             <tr>
-              <th>User</th>
-              <th>Strategy</th>
-              <th>Generated</th>
+              <th>用户</th>
+              <th>策略</th>
+              <th>生成时间</th>
               <th>Top K</th>
             </tr>
           </thead>
           <tbody>
             {% for result in latest_results %}
               <tr>
-                <td>{% if result.user %}{{ result.user.username }}{% else %}Global{% endif %}</td>
+                <td>{% if result.user %}{{ result.user.username }}{% else %}全局{% endif %}</td>
                 <td>{{ result.strategy }}</td>
                 <td>{{ result.generated_at }}</td>
                 <td>{{ result.top_k }}</td>
@@ -80,7 +118,7 @@
         </table>
       </div>
     {% else %}
-      <p class="empty-state mb-0">No recommendation results are available yet.</p>
+      <p class="empty-state mb-0">暂无推荐结果。</p>
     {% endif %}
   </section>
 {% endblock %}

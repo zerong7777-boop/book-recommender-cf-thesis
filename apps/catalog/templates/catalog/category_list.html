@@ -1,12 +1,12 @@
 ﻿{% extends "base.html" %}
 
-{% block title %}{{ category.name }} | Book Recommender{% endblock %}
+{% block title %}{{ category.name }} | 图书推荐系统{% endblock %}
 
 {% block content %}
   <section class="content-panel mb-4">
-    <p class="section-kicker">Category shelf</p>
+    <p class="section-kicker">分类书架</p>
     <h1 class="page-title">{{ category.name }}</h1>
-    <p class="section-description">Books grouped under the same category for quick browsing and comparison.</p>
+    <p class="section-description">同一分类下的图书，方便快速浏览和比较。</p>
   </section>
 
   <section class="content-panel">
@@ -19,7 +19,7 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="empty-state mb-0">This category does not contain books yet.</p>
+      <p class="empty-state mb-0">这个分类下还没有图书。</p>
     {% endif %}
   </section>
 {% endblock %}

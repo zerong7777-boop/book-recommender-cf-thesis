@@ -1,41 +1,41 @@
 {% extends "base.html" %}
 
-{% block title %}Experiment Results | Book Recommender{% endblock %}
+{% block title %}实验结果 | 图书推荐系统{% endblock %}
 
 {% block content %}
   <section class="state-banner mb-4">
-    <p class="section-kicker">Offline evaluation</p>
-    <h1 class="page-title">Offline evaluation lab</h1>
-    <p class="section-description mb-0">This page reads the saved evaluation artifact and turns it into a thesis-friendly view of K-value checkpoints and algorithm notes.</p>
+    <p class="section-kicker">离线评估</p>
+    <h1 class="page-title">离线评估实验室</h1>
+    <p class="section-description mb-0">本页读取已保存的评估产物，并整理为适合论文展示的 K 值检查点与算法说明视图。</p>
   </section>
 
   <section class="content-panel mb-4">
     <div class="section-header-row">
       <div>
-        <p class="section-kicker">Summary</p>
-        <h2 class="section-title h1 mb-0">K-value checkpoints</h2>
+        <p class="section-kicker">摘要</p>
+        <h2 class="section-title h1 mb-0">K 值检查点</h2>
       </div>
     </div>
     <div class="row g-3 mb-4">
       <div class="col-md-4">
         <article class="metric-card h-100">
-          <p class="small-label mb-1">Checkpoint count</p>
+          <p class="small-label mb-1">检查点数量</p>
           <p class="metric-card-value">{{ summary.overview|length }}</p>
-          <p class="small-label mb-0">Rows loaded from the offline summary artifact.</p>
+          <p class="small-label mb-0">来自离线摘要产物的行数。</p>
         </article>
       </div>
       <div class="col-md-4">
         <article class="metric-card h-100">
-          <p class="small-label mb-1">Imported subjects</p>
+          <p class="small-label mb-1">导入样本</p>
           <p class="metric-card-value">{{ summary.metadata.dataset_user_count|default:0 }}</p>
-          <p class="small-label mb-0">Goodbooks-style users participating in offline evaluation.</p>
+          <p class="small-label mb-0">参与离线评估的 Goodbooks 风格用户。</p>
         </article>
       </div>
       <div class="col-md-4">
         <article class="metric-card h-100">
-          <p class="small-label mb-1">Run records</p>
+          <p class="small-label mb-1">运行记录</p>
           <p class="metric-card-value">{{ summary.metadata.run_count|default:0 }}</p>
-          <p class="small-label mb-0">Algorithm snapshots persisted for this artifact.</p>
+          <p class="small-label mb-0">为该产物保存的算法快照数量。</p>
         </article>
       </div>
     </div>
@@ -45,8 +45,8 @@
           <thead>
             <tr>
               <th>K</th>
-              <th>Precision</th>
-              <th>Recall</th>
+              <th>精确率</th>
+              <th>召回率</th>
             </tr>
           </thead>
           <tbody>
@@ -61,15 +61,15 @@
         </table>
       </div>
     {% else %}
-      <p class="empty-state mb-0">No evaluation artifact has been generated yet.</p>
+      <p class="empty-state mb-0">评估产物尚未生成。</p>
     {% endif %}
   </section>
 
   <section class="content-panel mb-4">
     <div class="section-header-row">
       <div>
-        <p class="section-kicker">Curves</p>
-        <h2 class="section-title h1 mb-0">Precision curves</h2>
+        <p class="section-kicker">曲线</p>
+        <h2 class="section-title h1 mb-0">精确率曲线</h2>
       </div>
     </div>
     {% if summary.curves.precision %}
@@ -79,12 +79,12 @@
             <article class="curve-card h-100">
               <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
                 <div>
-                  <p class="small-label mb-1">Precision</p>
+                  <p class="small-label mb-1">精确率</p>
                   <h3 class="h4 mb-0">{{ series.name }}</h3>
                 </div>
                 <span class="status-pill">K = {{ series.points|length }}</span>
               </div>
-              <svg class="curve-chart" viewBox="0 0 240 120" role="img" aria-label="Precision curve for {{ series.name }}">
+              <svg class="curve-chart" viewBox="0 0 240 120" role="img" aria-label="{{ series.name }} 的精确率曲线">
                 <line x1="12" y1="108" x2="228" y2="108" class="curve-axis"></line>
                 <line x1="12" y1="12" x2="12" y2="108" class="curve-axis"></line>
                 <polyline points="{{ series.svg_points }}" class="curve-line"></polyline>
@@ -99,15 +99,15 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="empty-state mb-0">Precision curves appear after offline evaluation runs complete.</p>
+      <p class="empty-state mb-0">离线评估完成后将显示精确率曲线。</p>
     {% endif %}
   </section>
 
   <section class="content-panel mb-4">
     <div class="section-header-row">
       <div>
-        <p class="section-kicker">Curves</p>
-        <h2 class="section-title h1 mb-0">Recall curves</h2>
+        <p class="section-kicker">曲线</p>
+        <h2 class="section-title h1 mb-0">召回率曲线</h2>
       </div>
     </div>
     {% if summary.curves.recall %}
@@ -117,12 +117,12 @@
             <article class="curve-card h-100">
               <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
                 <div>
-                  <p class="small-label mb-1">Recall</p>
+                  <p class="small-label mb-1">召回率</p>
                   <h3 class="h4 mb-0">{{ series.name }}</h3>
                 </div>
                 <span class="status-pill">K = {{ series.points|length }}</span>
               </div>
-              <svg class="curve-chart" viewBox="0 0 240 120" role="img" aria-label="Recall curve for {{ series.name }}">
+              <svg class="curve-chart" viewBox="0 0 240 120" role="img" aria-label="{{ series.name }} 的召回率曲线">
                 <line x1="12" y1="108" x2="228" y2="108" class="curve-axis"></line>
                 <line x1="12" y1="12" x2="12" y2="108" class="curve-axis"></line>
                 <polyline points="{{ series.svg_points }}" class="curve-line"></polyline>
@@ -137,15 +137,15 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="empty-state mb-0">Recall curves appear after offline evaluation runs complete.</p>
+      <p class="empty-state mb-0">离线评估完成后将显示召回率曲线。</p>
     {% endif %}
   </section>
 
   <section class="content-panel mb-4">
     <div class="section-header-row">
       <div>
-        <p class="section-kicker">Case studies</p>
-        <h2 class="section-title h1 mb-0">Case studies</h2>
+        <p class="section-kicker">案例分析</p>
+        <h2 class="section-title h1 mb-0">案例分析</h2>
       </div>
     </div>
     {% if summary.case_studies %}
@@ -155,12 +155,26 @@
             <article class="path-card h-100">
               <p class="small-label mb-2">{{ case.subject }}</p>
               <h3 class="h4 mb-2">{{ case.holdout_book }}</h3>
-              <p class="mb-3">Best strategy: {{ case.best_strategy }}{% if case.hit_rank %} at rank {{ case.hit_rank }}{% endif %}</p>
+              <p class="mb-3">
+                最佳策略：
+                {% if case.best_strategy == "hot" %}
+                  热门推荐
+                {% elif case.best_strategy == "itemcf" %}
+                  ItemCF
+                {% elif case.best_strategy == "usercf" %}
+                  UserCF
+                {% elif case.best_strategy == "hybrid" %}
+                  混合策略
+                {% else %}
+                  {{ case.best_strategy }}
+                {% endif %}
+                {% if case.hit_rank %}，命中排名第 {{ case.hit_rank }} 名{% endif %}
+              </p>
               <ul class="status-list mb-0">
                 {% for title in case.top_recommendations %}
                   <li class="status-pill">{{ title }}</li>
                 {% empty %}
-                  <li class="status-pill">No top recommendations recorded</li>
+                  <li class="status-pill">未记录前置推荐</li>
                 {% endfor %}
               </ul>
             </article>
@@ -168,15 +182,15 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="empty-state mb-0">Case studies will appear once the evaluator has holdout subjects to score.</p>
+      <p class="empty-state mb-0">评估器获得留出样本后将显示案例分析。</p>
     {% endif %}
   </section>
 
   <section class="content-panel mb-4">
     <div class="section-header-row">
       <div>
-        <p class="section-kicker">Similarity</p>
-        <h2 class="section-title h1 mb-0">Similarity comparison</h2>
+        <p class="section-kicker">相似度</p>
+        <h2 class="section-title h1 mb-0">相似度对比</h2>
       </div>
     </div>
     {% if summary.similarity_comparison %}
@@ -184,39 +198,39 @@
         {% for name, row in summary.similarity_comparison.items %}
           <div class="col-md-6">
             <article class="metric-card h-100">
-              <p class="small-label mb-1">ItemCF similarity</p>
+              <p class="small-label mb-1">ItemCF 相似度</p>
               <p class="metric-card-value">{{ row.name }}</p>
               <ul class="status-list mb-0">
-                <li class="status-pill">Best precision {{ row.best_precision }}</li>
-                <li class="status-pill">Best recall {{ row.best_recall }}</li>
-                <li class="status-pill">Best K {{ row.best_k }}</li>
+                <li class="status-pill">最佳精确率 {{ row.best_precision }}</li>
+                <li class="status-pill">最佳召回率 {{ row.best_recall }}</li>
+                <li class="status-pill">最佳 K 值 {{ row.best_k }}</li>
               </ul>
             </article>
           </div>
         {% endfor %}
       </div>
     {% else %}
-      <p class="empty-state mb-0">Cosine and Pearson comparison runs after the offline evaluator has holdout subjects.</p>
+      <p class="empty-state mb-0">当离线评估器拥有留出样本后，将运行 Cosine 与 Pearson 对比。</p>
     {% endif %}
   </section>
 
   <section class="content-panel mb-4">
     <div class="section-header-row">
       <div>
-        <p class="section-kicker">Random split</p>
-        <h2 class="section-title h1 mb-0">Random interaction split</h2>
+        <p class="section-kicker">随机划分</p>
+        <h2 class="section-title h1 mb-0">随机交互划分</h2>
       </div>
     </div>
     <div class="row g-3 mb-4">
       <div class="col-md-6">
         <article class="metric-card h-100">
-          <p class="small-label mb-1">Train interactions</p>
+          <p class="small-label mb-1">训练交互数</p>
           <p class="metric-card-value">{{ summary.random_split.train_interaction_count|default:0 }}</p>
         </article>
       </div>
       <div class="col-md-6">
         <article class="metric-card h-100">
-          <p class="small-label mb-1">Test interactions</p>
+          <p class="small-label mb-1">测试交互数</p>
           <p class="metric-card-value">{{ summary.random_split.test_interaction_count|default:0 }}</p>
         </article>
       </div>
@@ -226,10 +240,10 @@
         <table class="table align-middle mb-0">
           <thead>
             <tr>
-              <th>Algorithm</th>
-              <th>Precision</th>
-              <th>Recall</th>
-              <th>Best K</th>
+              <th>算法</th>
+              <th>精确率</th>
+              <th>召回率</th>
+              <th>最佳 K 值</th>
             </tr>
           </thead>
           <tbody>
@@ -245,15 +259,15 @@
         </table>
       </div>
     {% else %}
-      <p class="empty-state mb-0">Random split metrics require at least one subject with two interactions.</p>
+      <p class="empty-state mb-0">随机划分指标至少需要一个拥有两次交互的样本。</p>
     {% endif %}
   </section>
 
   <section class="content-panel">
     <div class="section-header-row">
       <div>
-        <p class="section-kicker">Algorithm notes</p>
-        <h2 class="section-title h1 mb-0">Comparison snapshots</h2>
+        <p class="section-kicker">算法说明</p>
+        <h2 class="section-title h1 mb-0">对比快照</h2>
       </div>
     </div>
     {% if summary.algorithms %}
@@ -261,21 +275,21 @@
         {% for algorithm in summary.algorithms %}
           <div class="col-md-6">
             <article class="path-card h-100">
-              <p class="small-label mb-2">Algorithm</p>
+              <p class="small-label mb-2">算法</p>
               <h3 class="h4 mb-3">{{ algorithm.name }}</h3>
               <p class="mb-3">{{ algorithm.summary }}</p>
               <ul class="status-list mb-3">
-                <li class="status-pill">Best precision {{ algorithm.best_precision }}</li>
-                <li class="status-pill">Best recall {{ algorithm.best_recall }}</li>
-                <li class="status-pill">Best K {{ algorithm.best_k }}</li>
+                <li class="status-pill">最佳精确率 {{ algorithm.best_precision }}</li>
+                <li class="status-pill">最佳召回率 {{ algorithm.best_recall }}</li>
+                <li class="status-pill">最佳 K 值 {{ algorithm.best_k }}</li>
               </ul>
               <div class="table-shell table-responsive">
                 <table class="table align-middle mb-0">
                   <thead>
                     <tr>
                       <th>K</th>
-                      <th>Precision</th>
-                      <th>Recall</th>
+                      <th>精确率</th>
+                      <th>召回率</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -294,7 +308,7 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="empty-state mb-0">Algorithm summaries will appear after offline evaluation runs.</p>
+      <p class="empty-state mb-0">离线评估运行后将显示算法摘要。</p>
     {% endif %}
   </section>
 {% endblock %}

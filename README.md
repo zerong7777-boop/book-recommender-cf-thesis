@@ -164,14 +164,14 @@ The local MySQL demo has imported a bounded Goodbooks-10k slice (`ImportedIntera
 
 The downloaded Goodbooks CSV files are local inputs under `data/raw/goodbooks/` and are intentionally ignored by Git. The latest local Redis proof is still pending because no Redis service was available on `127.0.0.1:6379`.
 
-## Demo flow
+## 演示流程
 
-1. Open the site in the browser.
-2. Log in as `demo_reader` with `DemoPass123!`.
-3. Open the profile page to see the seeded ratings and personalized recommendation state.
-4. Open the recommendations page to review the current recommendation payload.
-5. Log out and log in as `thesis_admin` with `AdminPass123!`.
-6. Open the dashboard to inspect the latest offline job and trigger a rebuild.
+1. 在浏览器里打开站点首页。
+2. 用演示读者账号 `demo_reader` / `DemoPass123!` 登录，或者直接说“使用 demo_reader 演示账号登录”。
+3. 打开个人中心，查看已写入的评分和推荐状态。
+4. 打开推荐中心，查看当前推荐结果和推荐理由。
+5. 退出后切换到 `thesis_admin` / `AdminPass123!`。
+6. 打开管理页，查看最近的离线任务并手动触发重建。
 
 ## Verification
 

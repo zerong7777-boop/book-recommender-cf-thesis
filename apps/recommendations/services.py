@@ -251,7 +251,7 @@ def rebuild_recommendations_for_all_users(top_k: int = 20) -> OfflineJobRun:
                     book=book,
                     rank=rank,
                     score=float(book.rating_count) + float(book.average_rating),
-                    reason="Popular with readers",
+                    reason="受读者欢迎",
                 )
                 for rank, book in enumerate(hot_books, start=1)
             ]
@@ -267,14 +267,14 @@ def rebuild_recommendations_for_all_users(top_k: int = 20) -> OfflineJobRun:
                 subject_key = site_subject_key(user_id)
                 rated_book_ids = list(UserRating.objects.filter(user_id=user_id).values_list("book_id", flat=True))
                 recommendations = _itemcf_recommendations_from_similarity(subject_key, matrix, similarity, top_k)
-                reason = "Similar to your ratings"
+                reason = "与你的评分相似"
                 if not recommendations:
                     fallback_books = _hot_fallback_books_for_user(rated_book_ids, top_k=top_k)
                     recommendations = [
                         (book.id, float(book.rating_count) + float(book.average_rating))
                         for book in fallback_books
                     ]
-                    reason = "Popular fallback because ItemCF had sparse data"
+                    reason = "ItemCF 数据过稀时采用热门回退"
                 if not recommendations:
                     continue
                 result = RecommendationResult.objects.create(
@@ -317,7 +317,7 @@ def rebuild_recommendations_for_all_users(top_k: int = 20) -> OfflineJobRun:
                                 book_id=book_id,
                                 rank=rank,
                                 score=score,
-                                reason="Similar readers also liked this",
+                                reason="相似读者也喜欢这本书",
                             )
                             for rank, (book_id, score) in enumerate(usercf_recommendations, start=1)
                         ]
@@ -347,7 +347,7 @@ def rebuild_recommendations_for_all_users(top_k: int = 20) -> OfflineJobRun:
                                 book_id=book_id,
                                 rank=rank,
                                 score=score,
-                                reason="Blended ItemCF, UserCF, and popularity signal",
+                                reason="融合 ItemCF、UserCF 和热门信号",
                             )
                             for rank, (book_id, score) in enumerate(hybrid_recommendations, start=1)
                         ]

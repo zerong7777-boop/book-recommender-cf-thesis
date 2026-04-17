@@ -1,16 +1,27 @@
 ﻿{% extends "base.html" %}
 
-{% block title %}Recommendations | Book Recommender{% endblock %}
+{% block title %}推荐中心 | 图书推荐系统{% endblock %}
 
 {% block content %}
   <section class="state-banner mb-4">
-    <p class="section-kicker">Recommendation center</p>
-    <h1 class="page-title">Recommendation center</h1>
-    <p class="section-description mb-3">This page reads the latest offline-generated recommendation results and explains why each title was selected.</p>
+    <p class="section-kicker">推荐中心</p>
+    <h1 class="page-title">推荐中心</h1>
+    <p class="section-description mb-3">本页展示最新的离线推荐结果，并说明每本书被选中的原因。</p>
     <ul class="status-list">
-      <li class="status-pill">Current state: {{ recommendation_block.state }}</li>
+      <li class="status-pill">
+        当前状态：
+        {% if recommendation_block.state == "hot" %}
+          热门推荐
+        {% elif recommendation_block.state == "personalized" %}
+          个性化推荐
+        {% elif recommendation_block.state == "cold-start" %}
+          冷启动推荐
+        {% else %}
+          {{ recommendation_block.state }}
+        {% endif %}
+      </li>
       {% if recommendation_block.payload %}
-        <li class="status-pill">Updated at: {{ recommendation_block.payload.generated_at }}</li>
+        <li class="status-pill">更新时间：{{ recommendation_block.payload.generated_at }}</li>
       {% endif %}
     </ul>
   </section>
@@ -38,7 +49,7 @@
                 <p class="book-card-meta mb-2">
                   <a href="{% url 'catalog:category_list' item.category_slug %}">{{ item.category }}</a>
                 </p>
-                <p class="book-card-meta mb-2">Average rating: {{ item.average_rating }}</p>
+                <p class="book-card-meta mb-2">平均评分：{{ item.average_rating }}</p>
                 <p class="small-label mb-0">{{ item.reason }}</p>
               </div>
             </article>
@@ -46,7 +57,7 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="empty-state mb-0">Recommendations are not ready yet. Rate more books or wait for the next offline rebuild.</p>
+      <p class="empty-state mb-0">推荐结果暂未生成。可以继续评分，或等待下一次离线重建。</p>
     {% endif %}
   </section>
 {% endblock %}

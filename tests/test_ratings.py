@@ -137,8 +137,8 @@ def test_first_rate_page_lists_popular_books_for_new_user(client):
     assert response.status_code == 200
     content = response.content.decode()
     assert "Popular Novel" in content
-    assert "Quick-start rating" in content
-    assert "Popular books to rate first" in content
+    assert "快速评分" in content
+    assert "适合先评分的热门图书" in content
 
 
 @pytest.mark.django_db
@@ -163,5 +163,5 @@ def test_rate_book_page_shows_score_guidance(client):
 
     content = response.content.decode()
     assert response.status_code == 200
-    assert "Choose a score from 1 to 5" in content
+    assert "请选择 1 到 5 之间的评分" in content
     assert "Stage Light" in content

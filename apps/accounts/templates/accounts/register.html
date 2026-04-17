@@ -1,18 +1,18 @@
 ﻿{% extends "base.html" %}
 
-{% block title %}Register | Book Recommender{% endblock %}
+{% block title %}注册 | 图书推荐系统{% endblock %}
 
 {% block content %}
   <section class="auth-panel">
-    <p class="section-kicker">New account</p>
-    <h1 class="page-title">Create account</h1>
-    <p class="auth-hint">Register a local reader account to exercise cold-start guidance, rating submission, and personalized recommendations.</p>
+    <p class="section-kicker">新建账户</p>
+    <h1 class="page-title">创建账户</h1>
+    <p class="auth-hint">注册本地读者账户，即可体验冷启动引导、评分提交和个性化推荐。</p>
     <form method="post">
       {% csrf_token %}
       {{ form.as_p }}
       <div class="panel-actions">
-        <button type="submit" class="btn btn-dark">Register</button>
-        <a class="btn btn-outline-dark" href="{% url 'accounts:login' %}">Log in</a>
+        <button type="submit" class="btn btn-dark">注册</button>
+        <a class="btn btn-outline-dark" href="{% url 'accounts:login' %}">登录</a>
       </div>
     </form>
   </section>

@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 import subprocess
 import sys
 
@@ -74,3 +75,10 @@ def test_production_settings_include_railway_host_csrf_and_staticfiles():
     assert "whitenoise.middleware.WhiteNoiseMiddleware" in settings["middleware"]
     assert settings["static_root"].endswith("staticfiles")
     assert settings["staticfiles_backend"] == "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+
+def test_procfile_refreshes_evaluation_artifact_before_serving_web():
+    procfile = Path("Procfile").read_text(encoding="utf-8")
+
+    assert "python manage.py evaluate_recommenders --skip-record" in procfile
+    assert "gunicorn book_recommender.wsgi:application" in procfile

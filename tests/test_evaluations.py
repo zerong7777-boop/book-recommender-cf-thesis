@@ -129,6 +129,41 @@ def test_evaluate_recommenders_uses_imported_interactions_and_persists_runs(sett
     } == {"hot", "itemcf", "usercf", "hybrid"}
 
 
+@pytest.mark.django_db
+def test_evaluate_recommenders_can_refresh_artifact_without_recording_runs(settings):
+    tmp_path = make_temp_dir("eval-skip-record-")
+    settings.BASE_DIR = tmp_path
+    category = Category.objects.create(name="Skip Record Eval", slug="skip-record-eval")
+    books = [
+        Book.objects.create(
+            title=f"Skip Record Book {idx}",
+            author="Author",
+            category=category,
+            description="desc",
+            publisher="pub",
+            publication_year=2024,
+            average_rating=4.0,
+            rating_count=10,
+        )
+        for idx in range(1, 4)
+    ]
+    for dataset_user_id in (301, 302):
+        for score, book in enumerate(books, start=3):
+            ImportedInteraction.objects.create(
+                dataset_user_id=dataset_user_id,
+                book=book,
+                score=min(score, 5),
+            )
+
+    call_command("evaluate_recommenders", skip_record=True)
+
+    summary_path = evaluation_artifact_dir(tmp_path) / "summary.json"
+    assert summary_path.exists()
+    payload = json.loads(summary_path.read_text(encoding="utf-8"))
+    assert payload["overview"]
+    assert EvaluationRun.objects.count() == 0
+
+
 def test_experiment_results_page_reads_summary(client, settings):
     tmp_path = make_temp_dir("eval-view-")
     settings.BASE_DIR = tmp_path

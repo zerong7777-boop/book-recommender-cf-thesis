@@ -80,6 +80,10 @@ Local manual testing guide:
 
 [MANUAL_TEST_GUIDE.md](MANUAL_TEST_GUIDE.md)
 
+Chinese implementation details:
+
+[docs/PROJECT_IMPLEMENTATION_CN.md](docs/PROJECT_IMPLEMENTATION_CN.md)
+
 ## Local Setup
 
 ### 1. Install Dependencies

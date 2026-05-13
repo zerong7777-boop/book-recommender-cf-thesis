@@ -13,7 +13,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 from apps.catalog.models import Book
 from apps.ratings.models import UserRating
 from apps.ratings.services import build_interaction_frame, site_subject_key
-from apps.recommendations.cache import cache_hot_recommendations, cache_user_recommendations
+from apps.recommendations.cache import (
+    cache_hot_recommendations,
+    cache_user_recommendations,
+    invalidate_user_recommendations,
+)
 from apps.recommendations.models import (
     OfflineJobRun,
     RecommendationItem,
@@ -216,6 +220,115 @@ def _cache_result(cache_warnings: List[str], label: str, cache_writer, *args) ->
         cache_writer(*args)
     except Exception as exc:  # pragma: no cover - backend-specific in production
         cache_warnings.append(f"{label}_cache_failed={exc.__class__.__name__}: {exc}")
+
+
+def _create_recommendation_result(
+    *,
+    user_id: int | None,
+    strategy: str,
+    recommendations: List[Tuple[int, float]],
+    reason: str,
+    top_k: int,
+) -> RecommendationResult:
+    result = RecommendationResult.objects.create(
+        user_id=user_id,
+        strategy=strategy,
+        generated_at=timezone.now(),
+        top_k=top_k,
+    )
+    RecommendationItem.objects.bulk_create(
+        [
+            RecommendationItem(
+                result=result,
+                book_id=book_id,
+                rank=rank,
+                score=score,
+                reason=reason,
+            )
+            for rank, (book_id, score) in enumerate(recommendations, start=1)
+        ]
+    )
+    return result
+
+
+def refresh_recommendations_for_user(user_id: int, top_k: int = 20) -> RecommendationResult | None:
+    rated_book_ids = list(UserRating.objects.filter(user_id=user_id).values_list("book_id", flat=True))
+    if len(rated_book_ids) < 3:
+        RecommendationResult.objects.filter(user_id=user_id, strategy__in=["itemcf", "usercf", "hybrid"]).delete()
+        invalidate_user_recommendations(user_id)
+        return None
+
+    frame = _build_interaction_frame()
+    matrix = _build_interaction_matrix(frame)
+    item_similarity = _compute_item_similarity(matrix)
+    user_similarity = _compute_user_similarity(matrix)
+    hot_books = hot_recommendations(top_k=top_k)
+    subject_key = site_subject_key(user_id)
+
+    itemcf_recommendations = _itemcf_recommendations_from_similarity(
+        subject_key,
+        matrix,
+        item_similarity,
+        top_k,
+    )
+    itemcf_reason = "与你的评分相似"
+    if not itemcf_recommendations:
+        fallback_books = _hot_fallback_books_for_user(rated_book_ids, top_k=top_k)
+        itemcf_recommendations = [
+            (book.id, float(book.rating_count) + float(book.average_rating))
+            for book in fallback_books
+        ]
+        itemcf_reason = "ItemCF 数据过稀时采用热门回退"
+
+    usercf_recommendations = _usercf_recommendations_from_similarity(
+        subject_key,
+        matrix,
+        user_similarity,
+        top_k,
+    )
+    hybrid_recommendations = _hybrid_recommendations(
+        subject_key,
+        matrix,
+        item_similarity,
+        user_similarity,
+        hot_books,
+        rated_book_ids,
+        top_k,
+    )
+
+    with transaction.atomic():
+        RecommendationResult.objects.filter(user_id=user_id, strategy__in=["itemcf", "usercf", "hybrid"]).delete()
+        itemcf_result = None
+        if itemcf_recommendations:
+            itemcf_result = _create_recommendation_result(
+                user_id=user_id,
+                strategy="itemcf",
+                recommendations=itemcf_recommendations,
+                reason=itemcf_reason,
+                top_k=top_k,
+            )
+        if usercf_recommendations:
+            _create_recommendation_result(
+                user_id=user_id,
+                strategy="usercf",
+                recommendations=usercf_recommendations,
+                reason="相似读者也喜欢这本书",
+                top_k=top_k,
+            )
+        if hybrid_recommendations:
+            _create_recommendation_result(
+                user_id=user_id,
+                strategy="hybrid",
+                recommendations=hybrid_recommendations,
+                reason="融合 ItemCF、UserCF 和热门信号",
+                top_k=top_k,
+            )
+
+    if itemcf_result is None:
+        invalidate_user_recommendations(user_id)
+        return None
+    cache_user_recommendations(user_id, itemcf_result)
+    return itemcf_result
 
 
 def rebuild_recommendations_for_all_users(top_k: int = 20) -> OfflineJobRun:

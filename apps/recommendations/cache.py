@@ -23,6 +23,10 @@ def cache_user_recommendations(user_id: int, result: RecommendationResult) -> Di
     return payload
 
 
+def invalidate_user_recommendations(user_id: int) -> None:
+    cache.delete(user_recommendation_cache_key(user_id))
+
+
 def cache_hot_recommendations(result: RecommendationResult) -> Dict[str, Any]:
     payload = _serialize_recommendation_result(result)
     cache.set(hot_recommendation_cache_key(), payload, timeout=DEFAULT_CACHE_TIMEOUT)

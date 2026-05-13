@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from apps.catalog.models import Book
+from apps.recommendations.services import refresh_recommendations_for_user
 
 from .forms import RatingForm
 from .services import delete_rating, upsert_rating
@@ -21,6 +22,7 @@ def rate_book_view(request, pk):
         form = RatingForm(request.POST)
         if form.is_valid():
             upsert_rating(user=request.user, book=book, score=form.cleaned_data["score"])
+            refresh_recommendations_for_user(request.user.id)
             return redirect(reverse("catalog:book_detail", kwargs={"pk": book.pk}))
     else:
         form = RatingForm()
@@ -32,5 +34,6 @@ def delete_rating_view(request, pk):
     book = get_object_or_404(Book, pk=pk)
     if request.method == "POST":
         delete_rating(user=request.user, book=book)
+        refresh_recommendations_for_user(request.user.id)
         return redirect(reverse("accounts:profile"))
     return render(request, "ratings/delete_rating.html", {"book": book})

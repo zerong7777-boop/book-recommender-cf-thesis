@@ -66,7 +66,7 @@ def test_recommendation_page_shows_cached_reason_for_authenticated_user(client):
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "personalized" in content
+    assert "个性化推荐" in content
     assert "Recommended Book" in content
     assert "Because you liked Rated 1" in content
 
@@ -122,6 +122,6 @@ def test_book_detail_page_shows_personalized_recommendation_reason_for_logged_in
     response = client.get(reverse("catalog:book_detail", kwargs={"pk": target.pk}))
 
     content = response.content.decode()
-    assert "Why this book is recommended to you" in content
+    assert "为什么向你推荐这本书" in content
     assert "Because you liked Rated 1" in content
-    assert "Rank #1" in content
+    assert "第 1 名" in content

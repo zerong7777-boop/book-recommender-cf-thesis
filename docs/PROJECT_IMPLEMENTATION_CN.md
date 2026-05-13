@@ -680,18 +680,27 @@ DEFAULT_CACHE_TIMEOUT = None
 也就是：
 
 - Redis 中不会按 TTL 自动失效
-- 需要依靠离线重建覆盖写入
+- 全量推荐重建会覆盖写入缓存
+- 用户评分新增、更新或删除后，会同步刷新该用户的个性化推荐缓存
 
 ### 6.4 缓存刷新逻辑
 
-推荐重建结束后会执行：
+推荐缓存有两类刷新路径。
+
+全量离线重建结束后会执行：
 
 - `cache_hot_recommendations(hot_result)`
 - `cache_user_recommendations(user_id, result)`
 
-因此刷新时机是：
+全量刷新时机是：
 
 - `rebuild_recommendations_for_all_users()` 成功跑完之后
+
+用户评分变化后会执行：
+
+- `refresh_recommendations_for_user(user_id)`
+
+该函数只重算当前用户的 `itemcf`、`usercf` 和 `hybrid` 推荐结果，并刷新 `user:{user_id}:recs` 缓存。若用户评分数低于 3 条，则删除该用户旧的个性化推荐结果并清空对应缓存，让页面回到冷启动/热门推荐状态。
 
 ### 6.5 缓存未命中处理
 

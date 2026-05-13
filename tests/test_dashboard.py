@@ -167,7 +167,7 @@ def test_trigger_rebuild_skips_launch_when_lock_exists(client, monkeypatch, sett
 
     monkeypatch.setattr(dashboard_views.time, "time", lambda: 9999999999.0)
     (runtime_dir / "dashboard_rebuild.lock").write_text(
-        json.dumps({"pid": os.getpid(), "created_at": 0.0}),
+        json.dumps({"pid": os.getpid(), "created_at": 9999999999.0}),
         encoding="utf-8",
     )
     client.login(username="locked", password="AdminPass123")
@@ -176,6 +176,39 @@ def test_trigger_rebuild_skips_launch_when_lock_exists(client, monkeypatch, sett
     assert response.status_code == 302
     assert response.url == reverse("dashboard:home")
     assert called["launched"] is False
+
+
+@pytest.mark.django_db
+def test_trigger_rebuild_reclaims_timed_out_lock_even_when_pid_still_exists(client, monkeypatch, settings, tmp_path):
+    staff = get_user_model().objects.create_user(
+        username="same-process-stale",
+        email="same-process-stale@example.com",
+        password="AdminPass123",
+        is_staff=True,
+    )
+    called = {"launched": False}
+
+    def fake_launch():
+        called["launched"] = True
+
+    monkeypatch.setattr("apps.dashboard.views._launch_rebuild_job", fake_launch)
+    settings.BASE_DIR = tmp_path
+    runtime_dir = Path(tmp_path) / ".runtime"
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+    (runtime_dir / "dashboard_rebuild.lock").write_text(
+        json.dumps({"pid": os.getpid(), "created_at": 100.0}),
+        encoding="utf-8",
+    )
+    import apps.dashboard.views as dashboard_views
+
+    monkeypatch.setattr(dashboard_views.time, "time", lambda: 100.0 + dashboard_views.REBUILD_LOCK_TIMEOUT_SECONDS + 1)
+
+    client.login(username="same-process-stale", password="AdminPass123")
+    response = client.post(reverse("dashboard:trigger_rebuild"))
+
+    assert response.status_code == 302
+    assert response.url == reverse("dashboard:home")
+    assert called["launched"] is True
 
 
 @pytest.mark.django_db

@@ -99,9 +99,11 @@ def _rebuild_lock_is_stale(lock_path: Path) -> bool:
     payload = _read_rebuild_lock(lock_path)
     if payload is None:
         return True
+    if time.time() - payload["created_at"] > REBUILD_LOCK_TIMEOUT_SECONDS:
+        return True
     if payload["pid"] is not None:
         return not _process_exists(payload["pid"])
-    return time.time() - payload["created_at"] > REBUILD_LOCK_TIMEOUT_SECONDS
+    return False
 
 
 def _acquire_rebuild_lock() -> bool:

@@ -72,8 +72,13 @@
       <div class="row g-4">
         {% for item in similar_books %}
           <div class="col-sm-6 col-xl-4">
-            {% include "catalog/_book_card.html" with book=item.target_book %}
-            <p class="small-label mt-2 mb-0">相似度得分：{{ item.score|floatformat:2 }}</p>
+            {% if item.target_book %}
+              {% include "catalog/_book_card.html" with book=item.target_book %}
+              <p class="small-label mt-2 mb-0">相似度得分：{{ item.score|floatformat:2 }}</p>
+            {% else %}
+              {% include "catalog/_book_card.html" with book=item %}
+              <p class="small-label mt-2 mb-0">同分类热门图书</p>
+            {% endif %}
           </div>
         {% endfor %}
       </div>

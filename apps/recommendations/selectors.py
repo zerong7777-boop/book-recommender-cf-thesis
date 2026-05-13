@@ -1,6 +1,7 @@
 from django.core.cache import cache
 
 from apps.recommendations.cache import hot_recommendation_cache_key, user_recommendation_cache_key
+from apps.catalog.models import Book
 from apps.recommendations.models import RecommendationResult, SimilarBookResult
 
 
@@ -104,4 +105,14 @@ def recommendation_explanation_for_book(user, book):
 
 
 def similar_books_for_detail(book, user):
-    return SimilarBookResult.objects.select_related("target_book", "target_book__category").filter(source_book=book)[:6]
+    similar = list(
+        SimilarBookResult.objects.select_related("target_book", "target_book__category").filter(source_book=book)[:6]
+    )
+    if similar:
+        return similar
+    return list(
+        Book.objects.select_related("category")
+        .filter(category=book.category)
+        .exclude(pk=book.pk)
+        .order_by("-rating_count", "-average_rating")[:6]
+    )

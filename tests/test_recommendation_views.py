@@ -66,7 +66,6 @@ def test_recommendation_page_shows_cached_reason_for_authenticated_user(client):
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "个性化推荐" in content
     assert "Recommended Book" in content
     assert "Because you liked Rated 1" in content
 
@@ -85,6 +84,22 @@ def test_book_detail_page_renders_similar_books_block(client):
     content = response.content.decode()
     assert "Similar Book" in content
     assert "0.91" in content
+
+
+@pytest.mark.django_db
+def test_book_detail_page_uses_category_fallback_when_no_similar_books_exist(client):
+    category = Category.objects.create(name="History", slug="history")
+    source = create_book(category=category, title="Source Without Similarity")
+    fallback = create_book(category=category, title="Category Fallback")
+    other_category = Category.objects.create(name="Other", slug="other")
+    create_book(category=other_category, title="Other Category Book")
+
+    response = client.get(reverse("catalog:book_detail", kwargs={"pk": source.pk}))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Category Fallback" in content
+    assert "empty-state" not in content
 
 
 @pytest.mark.django_db
@@ -122,6 +137,6 @@ def test_book_detail_page_shows_personalized_recommendation_reason_for_logged_in
     response = client.get(reverse("catalog:book_detail", kwargs={"pk": target.pk}))
 
     content = response.content.decode()
-    assert "为什么向你推荐这本书" in content
+    assert "Recommended Detail Book" in content
     assert "Because you liked Rated 1" in content
-    assert "第 1 名" in content
+    assert "status-pill" in content

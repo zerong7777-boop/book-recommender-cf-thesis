@@ -124,6 +124,36 @@ def test_category_page_renders_expected_book(client):
 
 
 @pytest.mark.django_db
+def test_homepage_categories_prioritize_categories_with_books(client):
+    empty = Category.objects.create(name="Empty", slug="empty")
+    fiction = Category.objects.create(name="Fiction", slug="fiction")
+    history = Category.objects.create(name="History", slug="history")
+    Book.objects.create(
+        title="Novel",
+        author="A",
+        category=fiction,
+        description="d",
+        publisher="p",
+        publication_year=2020,
+    )
+    Book.objects.create(
+        title="Archive",
+        author="B",
+        category=history,
+        description="d",
+        publisher="p",
+        publication_year=2021,
+    )
+
+    response = client.get(reverse("catalog:home"))
+
+    content = response.content.decode()
+    assert fiction.name in content
+    assert history.name in content
+    assert empty.name not in content
+
+
+@pytest.mark.django_db
 def test_book_detail_page_renders_selected_book(client):
     category = Category.objects.create(name="Fantasy", slug="fantasy")
     book = Book.objects.create(

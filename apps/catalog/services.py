@@ -11,4 +11,4 @@ def search_books(query: str):
 
 
 def homepage_categories(limit: int = 6):
-    return Category.objects.order_by("name")[:limit]
+    return Category.objects.filter(books__isnull=False).distinct().order_by("name")[:limit]

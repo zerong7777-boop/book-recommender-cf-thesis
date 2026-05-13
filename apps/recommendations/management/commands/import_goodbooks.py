@@ -10,6 +10,17 @@ from apps.ratings.models import ImportedInteraction
 
 DEFAULT_CATEGORY_NAME = "Goodbooks Import"
 DEFAULT_CATEGORY_SLUG = "goodbooks-import"
+GOODBOOKS_CATEGORY_RULES = [
+    ("Computer Science", "computer-science", ("python", "data", "algorithm", "computer", "programming", "machine learning")),
+    ("History", "history", ("history", "kingdom", "war", "empire", "histor", "archive")),
+    ("Poetry", "poetry", ("poem", "poems", "poetry", "keats", "shakespeare")),
+    ("Romance", "romance", ("romance", "romantic", "love")),
+    ("Fantasy", "fantasy", ("fantasy", "dragon", "magic", "king", "queen")),
+    ("Mystery", "mystery", ("mystery", "detective", "crime", "murder", "secret")),
+    ("Science Fiction", "science-fiction", ("science fiction", "sci-fi", "space", "alien", "dune")),
+    ("Young Adult", "young-adult", ("young adult", "hunger games", "harry potter", "twilight")),
+    ("Nonfiction", "nonfiction", ("memoir", "biography", "handbook", "guide", "science")),
+]
 
 
 def _clean_year(value):
@@ -42,6 +53,14 @@ def _clean_text(value, *, fallback="", max_length=None):
     return text
 
 
+def _category_for_goodbooks_row(row, category_lookup):
+    text = f"{row.get('title', '')} {row.get('original_title', '')} {row.get('authors', '')}".lower()
+    for name, slug, keywords in GOODBOOKS_CATEGORY_RULES:
+        if any(keyword in text for keyword in keywords):
+            return category_lookup[slug]
+    return category_lookup[DEFAULT_CATEGORY_SLUG]
+
+
 class Command(BaseCommand):
     help = "Import Goodbooks-style books and ratings CSV files"
 
@@ -70,7 +89,10 @@ class Command(BaseCommand):
         if not required_rating_columns.issubset(ratings_frame.columns):
             raise CommandError(f"ratings.csv must contain columns: {sorted(required_rating_columns)}")
 
-        category, _ = Category.objects.get_or_create(
+        category_lookup = {}
+        for name, slug, _keywords in GOODBOOKS_CATEGORY_RULES:
+            category_lookup[slug], _ = Category.objects.get_or_create(slug=slug, defaults={"name": name})
+        category_lookup[DEFAULT_CATEGORY_SLUG], _ = Category.objects.get_or_create(
             slug=DEFAULT_CATEGORY_SLUG,
             defaults={"name": DEFAULT_CATEGORY_NAME},
         )
@@ -89,12 +111,13 @@ class Command(BaseCommand):
                 author = _clean_text(row.get("authors"), fallback="Unknown Author", max_length=author_max_length)
                 if not title:
                     continue
+                category = _category_for_goodbooks_row(row, category_lookup)
                 books_processed += 1
                 book, created = Book.objects.update_or_create(
                     title=title,
                     author=author,
-                    category=category,
                     defaults={
+                        "category": category,
                         "description": "Imported from Goodbooks baseline data.",
                         "publisher": "",
                         "publication_year": _clean_year(row.get("original_publication_year")),

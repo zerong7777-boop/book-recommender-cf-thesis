@@ -126,7 +126,7 @@ python manage.py import_goodbooks --source data/raw/goodbooks --limit-ratings 50
 
 - `title` -> `Book.title`
 - `authors` -> `Book.author`
-- 固定分类 `goodbooks-import` -> `Book.category`
+- 按标题、原始标题和作者关键词映射到展示分类 -> `Book.category`
 - `original_publication_year` -> `Book.publication_year`
 - `average_rating` -> `Book.average_rating`
 - `ratings_count` -> `Book.rating_count`
@@ -136,6 +136,7 @@ python manage.py import_goodbooks --source data/raw/goodbooks --limit-ratings 50
 
 说明：
 
+- 当前 Goodbooks 源文件没有提供正式 genre/category 字段，项目使用 `import_goodbooks.GOODBOOKS_CATEGORY_RULES` 做轻量关键词归类，覆盖 Computer Science、History、Poetry、Romance、Fantasy、Mystery、Science Fiction、Young Adult、Nonfiction；未命中时保留在 `goodbooks-import` 兜底分类。
 - 项目没有保存 Goodbooks 的原始 `book_id` 到 `Book` 独立字段中，而是仅在导入过程中用它做内存映射，将评分记录关联到创建后的 Django `Book.id`
 
 #### `ratings.csv` -> `ratings_importedinteraction`

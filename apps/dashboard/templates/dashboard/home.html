@@ -78,7 +78,9 @@
     </div>
 
     {% if rebuild_in_progress %}
-      <div class="alert alert-warning mb-4">当前已有刷新任务正在运行。</div>
+      <div class="alert alert-warning mb-4" data-dashboard-rebuild-refresh="true">
+        当前已有刷新任务正在运行。页面会每 5 秒自动刷新一次。
+      </div>
     {% endif %}
 
     <form method="post" action="{% url 'dashboard:trigger_rebuild' %}" class="panel-actions">
@@ -121,4 +123,12 @@
       <p class="empty-state mb-0">暂无推荐结果。</p>
     {% endif %}
   </section>
+
+  {% if rebuild_in_progress %}
+    <script>
+      window.setTimeout(function () {
+        window.location.reload();
+      }, 5000);
+    </script>
+  {% endif %}
 {% endblock %}

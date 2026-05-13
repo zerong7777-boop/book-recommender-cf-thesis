@@ -1,5 +1,6 @@
 import json
 import os
+import time
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -176,6 +177,32 @@ def test_trigger_rebuild_skips_launch_when_lock_exists(client, monkeypatch, sett
     assert response.status_code == 302
     assert response.url == reverse("dashboard:home")
     assert called["launched"] is False
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_auto_refreshes_while_rebuild_is_running(client, settings, tmp_path):
+    staff = get_user_model().objects.create_user(
+        username="auto-refresh",
+        email="auto-refresh@example.com",
+        password="AdminPass123",
+        is_staff=True,
+    )
+    settings.BASE_DIR = tmp_path
+    runtime_dir = Path(tmp_path) / ".runtime"
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+    (runtime_dir / "dashboard_rebuild.lock").write_text(
+        json.dumps({"pid": os.getpid(), "created_at": time.time()}),
+        encoding="utf-8",
+    )
+
+    client.login(username="auto-refresh", password="AdminPass123")
+    response = client.get(reverse("dashboard:home"))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert 'data-dashboard-rebuild-refresh="true"' in content
+    assert "window.location.reload()" in content
+    assert "5000" in content
 
 
 @pytest.mark.django_db
